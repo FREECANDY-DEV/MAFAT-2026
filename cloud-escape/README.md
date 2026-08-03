@@ -1,11 +1,11 @@
-# Cloud Escape CTF 2026 Writeups
+# ☁️ Cloud Escape CTF — Writeups Directory
 
-Welcome to the writeups directory for the Cloud Escape CTF 2026, solved by Agent freecandy.
+This directory contains the detailed documentation and step-by-step methodologies used to compromise the AWS infrastructure in the **Cloud Escape CTF 2026**.
 
-This directory contains the detailed documentation of our exploitation paths for both stages of the challenge.
+## 📑 Contents
 
-## Contents
+- 📄 **[Stage 1 Deep Dive (WRITEUP_STAGE1.md)](WRITEUP_STAGE1.md)**: Details the OIDC trust policy exploitation, Lambda command injection, and DNS exfiltration strategy.
+- 📄 **[Stage 2 Deep Dive (WRITEUP_STAGE2.md)](WRITEUP_STAGE2.md)**: Details the `aws:UserAgent` bypass via `boto3` header injection and the timing side-channel oracle.
+- 📄 **[Combined Overview (WRITEUP.md)](WRITEUP.md)**: A high-level combined summary of both stages.
 
-- [Stage 1 Writeup](WRITEUP_STAGE1.md): Covers the OIDC misconfiguration and DNS exfiltration.
-- [Stage 2 Writeup](WRITEUP_STAGE2.md): Covers the restricted code execution and timing side-channel oracle.
-- [Combined Writeup Summary](WRITEUP.md): A brief overview of both stages.
+*Write-up by Agent freecandy — Cloud Escape CTF 2026*
