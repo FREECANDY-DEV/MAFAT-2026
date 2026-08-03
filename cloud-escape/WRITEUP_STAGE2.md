@@ -17,7 +17,26 @@
 ## 🔍 The Reconnaissance Process
 
 ### 1. Fuzzing the CloudFront Test Site
-The challenge intelligence provided a CloudFront distribution URL. Manual inspection showed a basic webpage. We utilized directory busting tools to fuzz the endpoints and discovered a hidden `/docs.html` file.
+The challenge intelligence provided a CloudFront distribution URL. Manual inspection showed a basic webpage. 
+
+<details>
+<summary><b>View index.html (Main Page)</b></summary>
+
+```text
+Test Site
+
+I worked hard on this site, but I had a lot of fun doing it!
+
+I made sure not to include any secret information here—pretty sure I deleted it all.
+
+Here’s a picture of me having so much fun:
+This is me>
+```
+
+![Junior Developer](junior_developer.png)
+</details>
+
+We utilized directory busting tools to fuzz the endpoints and discovered a hidden `/docs.html` file.
 
 ### 2. The Policy Leak
 The `/docs.html` file inadvertently leaked the raw S3 Bucket Policy. 
