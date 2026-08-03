@@ -1,29 +1,100 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=F79211&center=true&vCenter=true&width=800&height=80&lines=Stage+2+Deep+Dive;%22Miss+Me+Yet%3F%22" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=42&pause=1000&color=F79211&center=true&vCenter=true&width=800&height=85&lines=Stage+2+Deep+Dive;%22Miss+Me+Yet%3F%22;AWS+Cloud+Escape+CTF+2026" alt="Typing SVG" />
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/AWS-us--east--1-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Region" />
+    <img src="https://img.shields.io/badge/Service-Lambda%20%7C%20S3%20%7C%20IAM-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS Services" />
+    <img src="https://img.shields.io/badge/Category-Cloud%20Security%20%7C%20IAM%20Bypass-F79211?style=for-the-badge" alt="Category" />
+    <img src="https://img.shields.io/badge/Points-150%20PTS-00C7B7?style=for-the-badge" alt="Points" />
+    <img src="https://img.shields.io/badge/Status-Methodology%20Verified-2EA44F?style=for-the-badge" alt="Status" />
+  </p>
 </div>
-
-## 📋 Challenge Intelligence & Overview
-
-| Field | Value |
-|---|---|
-| **Challenge** | Miss Me Yet? — Stage 2 |
-| **Points** | 150 |
-| **Test Site** | `https://d4ysu55xg7wfi.cloudfront.net/` |
-| **Execution API** | `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec` |
-| **Target Buckets** | `userd8a2f72fe43094e8` and `logd8a2f72fe43094e8` |
-| **Current Status** | Architecture & Versioning Enumeration (In Progress) |
 
 ---
 
-## 🔍 Detailed Investigation Steps & Methodology
+## 🎯 Executive Summary & Challenge Profile
 
-### Step 1: Reconnaissance & Fuzzing the CloudFront Distribution
-Initial exploration of the provided CloudFront distribution (`https://d4ysu55xg7wfi.cloudfront.net/`) revealed the main landing page (`index.html`) featuring an image (`junior_developer.png`) and text claiming that all secret information had been removed.
+> [!IMPORTANT]  
+> **Challenge Objective:** Locate and extract the confidential stage flag hidden within a restricted AWS VPC environment without triggering false-positive assumptions or relying on unstable indirect side-channels.
 
-By fuzzing the endpoint paths, we discovered a hidden documentation page at `/docs.html` which leaked the bucket's IAM Bucket Policy JSON.
+<table>
+  <thead>
+    <tr>
+      <th width="220">Parameter</th>
+      <th width="580">Intelligence & Endpoint Specification</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>🏷️ Challenge Name</code></td>
+      <td><strong>Miss Me Yet? (Stage 2)</strong></td>
+    </tr>
+    <tr>
+      <td><code>🌐 Public Test Site</code></td>
+      <td><a href="https://d4ysu55xg7wfi.cloudfront.net/">https://d4ysu55xg7wfi.cloudfront.net/</a></td>
+    </tr>
+    <tr>
+      <td><code>⚡ Execution API</code></td>
+      <td><code>https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec</code></td>
+    </tr>
+    <tr>
+      <td><code>📦 Target Resources</code></td>
+      <td>
+        • <strong>Asset Bucket:</strong> <code>userd8a2f72fe43094e8</code><br/>
+        • <strong>Audit Log Bucket:</strong> <code>logd8a2f72fe43094e8</code>
+      </td>
+    </tr>
+    <tr>
+      <td><code>🛡️ VPC Restrictions</code></td>
+      <td>Strict Egress Blocked (No Internet Gateway / No NAT Gateway / Blocked DNS Port 53)</td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## 🗺️ Architectural Threat Model & Data Flow
+
+The following Mermaid diagram illustrates the AWS infrastructure, the network isolation boundary, and the interaction flow between API Gateway, Lambda, and target S3 buckets:
+
+```mermaid
+graph TD
+    classDef client fill:#2b303b,stroke:#f79211,stroke-width:2px,color:#fff;
+    classDef aws fill:#232f3e,stroke:#ff9900,stroke-width:2px,color:#fff;
+    classDef vpc fill:#1a202c,stroke:#e2e8f0,stroke-width:2px,stroke-dasharray: 5 5,color:#fff;
+    classDef s3 fill:#1f2937,stroke:#38bdf8,stroke-width:2px,color:#fff;
+
+    A["👤 Participant / Client<br/>(base64 Python Payload)"] ::: client
+    B["🌐 API Gateway<br/>(/dev/code_exec)"] ::: aws
+
+    subgraph VPC ["🔒 AWS Isolated VPC (No Internet / DNS Egress)"]
+        C["⚡ AWS Lambda Engine<br/>Account: 186769093912<br/>(Response Masked: 200 / 500)"] ::: aws
+    end
+
+    subgraph S3_Layer ["🪣 AWS S3 Target Buckets"]
+        D["📦 userd8a2f72fe43094e8<br/>(Object Versioning Enabled)"] ::: s3
+        E["📜 logd8a2f72fe43094e8<br/>(S3 Server Access Logs)"] ::: s3
+    end
+
+    A -->|1. POST JSON Payload| B
+    B -->|2. Invoke Execution| C
+    C -->|3. Boto3 Header Injection<br/>User-Agent: Amazon CloudFront| D
+    D -.->|4. Delivery of Audit Events| E
+    C -->|5. Enumerate Version History<br/>s3:ListBucketVersions| D
+```
+
+---
+
+## 🧭 Step-by-Step Reconnaissance & Exploitation Methodology
+
+### <samp>STEP 01</samp> ✦ Reconnaissance & The Leaked IAM Policy
+Initial inspection of the CloudFront web distribution (`d4ysu55xg7wfi.cloudfront.net`) revealed a simple landing page (`index.html`) and an image asset (`junior_developer.png`). By directory fuzzing the web roots, we uncovered a hidden documentation endpoint at `/docs.html` that leaked the complete raw **S3 Bucket Policy**.
+
+> [!NOTE]  
+> The leaked JSON policy exposed two distinct access control statements (`Statement1` and `Statement2`), showing exactly how IAM conditions enforce access across public and private bucket paths.
 
 <details>
-<summary><b>View docs.html (Leaked S3 Bucket Policy)</b></summary>
+<summary><b>📄 Click to Expand: Leaked S3 Bucket Policy (<code>docs.html</code>)</b></summary>
 
 ```json
 {
@@ -75,74 +146,135 @@ By fuzzing the endpoint paths, we discovered a hidden documentation page at `/do
 
 ---
 
-### Step 2: Analyzing `/dev/code_exec` & VPC Security Constraints
+### <samp>STEP 02</samp> ✦ Execution Environment & VPC Isolation Mapping
+We analyzed the execution endpoint at `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec`. By submitting base64-encoded Python scripts, we identified three critical runtime properties:
 
-We investigated the Python code execution endpoint at `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec`. By submitting base64-encoded Python scripts, we mapped out the runtime constraints:
+```mermaid
+flowchart LR
+    subgraph Constraints ["⚡ Lambda Runtime Security Constraints"]
+        direction TB
+        C1["🚫 1. Outbound Network Isolation<br/>HTTP/HTTPS/DNS blocked at VPC edge"]
+        C2["🎭 2. API Response Masking<br/>Suppresses stdout & returns static strings"]
+        C3["🔑 3. VPC Execution Role<br/>Matches aws:SourceVpc condition in IAM"]
+    end
+```
 
-1. **IAM Identity & Execution Context**:
-   - The code runs inside an AWS Lambda function under Account ID `186769093912`.
-   - The execution role is an internal Lambda IAM role inside the designated VPC (`aws:SourceVpc` condition in Statement 2 is satisfied when running from within this Lambda).
-
-2. **Outbound Network Isolation (VPC Egress Blocked)**:
-   - External HTTP/HTTPS web requests fail because the VPC lacks an attached Internet Gateway or NAT Gateway.
-   - Outbound DNS resolution queries (port 53) are blocked.
-
-3. **API Response Masking**:
-   - The endpoint suppresses standard stdout/stderr output.
-   - Successful execution returns a static response: `{"result": "Code executed successfully"}`.
-   - Any raised exception returns a static error: `{"error": "Something went wrong!"}`.
+1. **VPC Outbound Network Isolation**:
+   - The Lambda executes inside an isolated VPC without an Internet Gateway (IGW) or NAT Gateway.
+   - Outbound DNS resolution (port 53) is blocked, preventing standard out-of-band data exfiltration.
+2. **Static API Response Masking**:
+   - Standard program output (`stdout` / `print()`) is discarded by the API Gateway wrapper.
+   - Any successful execution returns: `{"result": "Code executed successfully"}`.
+   - Any raised exception returns: `{"error": "Something went wrong!"}`.
+3. **IAM Execution Context**:
+   - The Lambda runs under AWS Account `186769093912` with an IAM role that inherently satisfies the `aws:SourceVpc` condition required by `Statement2`.
 
 ---
 
-### Step 3: Header Injection & Bypassing Statement 1
+### <samp>STEP 03</samp> ✦ Boto3 Header Injection to Bypass Policy Conditions
+To interact with the S3 bucket via the AWS SDK inside the `/dev/code_exec` runtime, our requests needed to satisfy the IAM condition `aws:UserAgent == "Amazon CloudFront"`. 
 
-To interact with `userd8a2f72fe43094e8` using the AWS SDK (`boto3`) inside `/dev/code_exec`, we injected the required `User-Agent: Amazon CloudFront` header using Boto3 event hooks:
+We implemented **Boto3 Event Hooks** (`before-send.s3.*`) to dynamically override the `User-Agent` HTTP header before signing and transmitting requests:
 
 ```python
 import boto3
 
+# Initialize S3 client within the Lambda VPC context
 s3 = boto3.client('s3', region_name='us-east-1')
+
+# Register an event hook to inject the required User-Agent header
 s3.meta.events.register(
     'before-send.s3.*', 
     lambda request, **kwargs: request.headers.update({'User-Agent': 'Amazon CloudFront'})
 )
+
+# Successfully list resources permitted under Statement1
+response = s3.list_objects_v2(Bucket='userd8a2f72fe43094e8')
 ```
 
-With this header injection in place, standard enumeration (`s3.list_objects_v2`) successfully listed the public assets defined in `Statement1` (`index.html`, `docs.html`, and `junior_developer.png`).
+> [!TIP]  
+> Injecting headers via `s3.meta.events.register` ensures that Boto3's internal signature calculation remains valid while presenting the exact string expected by the S3 policy evaluator.
 
 ---
 
-### Step 4: Discovery of S3 Server Access Logs (`logd8a2f72fe43094e8`)
+### <samp>STEP 04</samp> ✦ Audit Log Forensics via S3 Access Logs (`logd8a2f72fe43094e8`)
+During bucket enumeration, we discovered a companion S3 bucket: `logd8a2f72fe43094e8`.
+- This bucket receives **S3 Server Access Logs** (and CloudTrail data events) for all transactions performed against `userd8a2f72fe43094e8`.
+- Because our local challenge role (`ctf_participant_role`) possesses read permissions on `logd8a2f72fe43094e8`, we were able to parse historical access logs directly.
 
-Further enumeration revealed a secondary bucket: `logd8a2f72fe43094e8`.
-- This bucket is configured as the destination for **S3 Server Access Logs** (and CloudTrail Data Events) for `userd8a2f72fe43094e8`.
-- Because our local challenge credentials (`ctf_participant_role`) have read access to this log bucket, we were able to inspect historical access logs in JSON format.
-- Parsing these logs allowed us to inspect historical API calls (`GetObject`, `ListObjects`), identity principals (`userIdentity`), and `userAgent` strings used by automated workflows and deployment pipelines.
+```json
+{
+  "bucket_name": "logd8a2f72fe43094e8",
+  "log_type": "S3 Server Access Logs / JSON Records",
+  "key_insights": [
+    "Identifies historical GetObject and ListObjects requests",
+    "Exposes IAM Principal ARNs and source IPs of administrative pipelines",
+    "Captures unique User-Agent strings used in administrative deployments"
+  ]
+}
+```
 
 ---
 
-### Step 5: Direct S3 Object Versioning & Delete Marker Discovery
+### <samp>STEP 05</samp> ✦ Direct S3 Object Versioning & Delete Marker Discovery
+To avoid the inaccuracies and false positives associated with indirect timing measurements, we investigated direct AWS S3 versioning features against `userd8a2f72fe43094e8`.
 
-Rather than relying on indirect timing oracles, we tested advanced S3 API calls directly against `userd8a2f72fe43094e8` from within the VPC Lambda execution environment.
-
-We discovered that **S3 Object Versioning** is enabled on `userd8a2f72fe43094e8` and that `s3:ListBucketVersions` is permitted when using valid User-Agent headers:
+We confirmed that **S3 Object Versioning** is enabled on the target bucket and that `s3:ListBucketVersions` requests are permitted when passing a valid User-Agent:
 
 ```python
-res = s3.list_object_versions(Bucket='userd8a2f72fe43094e8')
+# Query object versioning history across the entire bucket
+versions_resp = s3.list_object_versions(Bucket='userd8a2f72fe43094e8')
 ```
 
-#### Key Findings from Versioning Analysis:
-1. **Multiple Object Versions**: `userd8a2f72fe43094e8` contains multiple historical versions of `docs.html` and `index.html`.
-2. **Delete Markers & Non-Current Keys**: The bucket history contains more than the three current live objects, indicating that previous versions or deleted objects exist in the bucket hierarchy.
-3. **Ruling Out False Positives**: Previous assumptions based on indirect timing measurements (such as `022050290014`) were ruled out as false positives.
+<table>
+  <thead>
+    <tr>
+      <th width="30%">Discovery Category</th>
+      <th width="70%">Technical Finding & Significance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>📚 Multiple Object Versions</code></td>
+      <td><code>userd8a2f72fe43094e8</code> contains multiple historical versions of both <code>docs.html</code> and <code>index.html</code>, indicating iterative deployments.</td>
+    </tr>
+    <tr>
+      <td><code>🗑️ Delete Markers & Hidden Keys</code></td>
+      <td>The bucket's versioning manifest contains more records than the three currently visible live objects, confirming that deleted or non-current objects exist in the version tree.</td>
+    </tr>
+    <tr>
+      <td><code>❌ False Positives Ruled Out</code></td>
+      <td>Previous candidate strings (such as <code>022050290014</code>) derived from indirect timing assumptions were definitively ruled out.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
-## 🚀 Next Steps & Active Investigation Paths
+## 🚀 Active Investigation Paths & Next Action Items
 
-1. **Enumerate All Version IDs**:
-   - Extract and inspect the full list of `Key` names and `VersionId` values returned by `list_object_versions` on `userd8a2f72fe43094e8`.
-   - Retrieve historical versions of `docs.html`, `index.html`, and any deleted/non-current keys using `s3.get_object(Bucket=..., Key=..., VersionId=...)`.
+```mermaid
+gantt
+    title Stage 2 Investigation Roadmap
+    dateFormat  YYYY-MM-DD
+    section Completed
+    Policy Leak & VPC Mapping           :done,    p1, 2026-08-01, 1d
+    Header Injection & Log Discovery      :done,    p2, after p1, 1d
+    S3 Versioning Enumeration            :done,    p3, after p2, 1d
+    section Active Focus
+    Enumerate All VersionId Records       :active,  p4, 2026-08-03, 1d
+    Correlate Access Logs with Statement2 :active,  p5, after p4, 1d
+```
 
-2. **Correlate Access Logs with Statement 2**:
-   - Cross-reference the historical `userAgent` values discovered in `logd8a2f72fe43094e8` to determine the exact string required by `Statement2` to unlock unrestricted access across all objects in `userd8a2f72fe43094e8/*`.
+1. **Full Version History Retrieval**:
+   - Extract the complete list of non-current `Key` names, `VersionId` identifiers, and `DeleteMarker` entries from `s3.list_object_versions()`.
+   - Restore and inspect historical object contents using `s3.get_object(Bucket=..., Key=..., VersionId=...)`.
+
+2. **Statement 2 Header Correlation via Audit Logs**:
+   - Cross-reference administrative `userAgent` strings recorded in `logd8a2f72fe43094e8` to identify the specific header value required by `Statement2` to unlock unrestricted read access across `userd8a2f72fe43094e8/*`.
+
+---
+
+<div align="center">
+  <sub>🛡️ Documented by <b>Agent freecandy</b> • Cloud Escape CTF 2026 • Advanced Cloud Infrastructure Security</sub>
+</div>
