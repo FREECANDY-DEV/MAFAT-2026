@@ -60,10 +60,10 @@ Facing an arbitrary code execution endpoint (`exec()`) that swallowed all `stdou
 ```mermaid
 graph LR
     A[Attacker] -->|Base64 Payload| B[API Gateway]
-    B -->|exec()| C[Lambda]
+    B -->|exec| C[Lambda]
     C -.->|Spoof User-Agent| D[boto3]
     D -->|Read Flag| E[(Test Site S3)]
-    C -->|time.sleep()| C
+    C -->|time.sleep| C
     C -->|Latency Output| A
     style A fill:#ef4444,color:#fff
     style C fill:#f90,color:#fff
