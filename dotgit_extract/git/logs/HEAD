@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 4edf7401ad8335c1d2873ed89db151a1f5892b42 John Doe <johndoe@atotallyrealcompany.com> 1748174353 +0000	commit (initial): Initial commit
+4edf7401ad8335c1d2873ed89db151a1f5892b42 17e49320d5e0f584c67b1d684a3f575cf4861380 John Doe <johndoe@atotallyrealcompany.com> 1748175113 +0000	commit: added github connector and role for cicd
+17e49320d5e0f584c67b1d684a3f575cf4861380 023cd412211a396cdb9737ff4b787f3d67a4d96c John Doe <johndoe@atotallyrealcompany.com> 1748175887 +0000	commit: Added experimental Lambda code for my super secret project
+023cd412211a396cdb9737ff4b787f3d67a4d96c 42403409f33f33e738180ffdafde7efa9d92d274 John Doe <johndoe@atotallyrealcompany.com> 1748176925 +0000	commit: fixed bugs
+42403409f33f33e738180ffdafde7efa9d92d274 2ad7b457b4c55389269a7441a75586b16fe7f88b John Doe <johndoe@atotallyrealcompany.com> 1748177153 +0000	commit: really fixed bugs this time
+2ad7b457b4c55389269a7441a75586b16fe7f88b a57eed3eaf08854cea1371279ebce9020466ee1c MD <md05ng2w@insightxc.com> 1766506578 +0200	commit (amend): really fixed bugs this time
