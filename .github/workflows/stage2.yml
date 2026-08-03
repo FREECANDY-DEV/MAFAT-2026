@@ -1,4 +1,5 @@
 name: Cloud Escape - Stage 2 (Miss Me Yet?)
+run-name: ⏱️ Stage 2 - Timing Oracle PoC
 on:
   push:
     branches: [corgi]
