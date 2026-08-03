@@ -1,19 +1,36 @@
-# Cloud Escape CTF 2026 - Full Writeup (Stage 1 & Stage 2)
+# ☁️ Cloud Escape CTF 2026 — Full Writeup (Stage 1 & 2)
 
 **Team:** Agent freecandy
 
-This repository contains the writeups for Stage 1 and Stage 2 of the Cloud Escape CTF 2026.
+Welcome to the comprehensive writeup repository for the **Cloud Escape CTF 2026**. This repository details the methodologies, vulnerabilities, and exploitation techniques used to completely compromise the target AWS infrastructure across both stages of the competition.
 
-## Summary
+---
 
-- **Stage 1 (Have Some Faith):** Exploited an OIDC Trust Policy misconfiguration and a Lambda command injection vulnerability to extract the flag via a DNS side-channel.
-- **Stage 1 Flag:** `1a1jelrlfg2yi2s0`
+## 🏆 Summary of Compromise
 
-- **Stage 2 (Miss Me Yet?):** Exploited a code execution endpoint and bypassed S3 bucket policies using header injection and a timing side-channel oracle to extract the flag character by character.
-- **Stage 2 Flag:** `0102013`
+| Stage | Challenge | Key Vulnerabilities Exploited | Flag |
+|---|---|---|---|
+| **Stage 1** | Have Some Faith | Misconfigured OIDC Wildcard Trust Policy, Lambda Command Injection, DNS Side-Channel Exfiltration | `1a1jelrlfg2yi2s0` |
+| **Stage 2** | Miss Me Yet? | Unsafe Python Code Execution (`exec()`), `aws:UserAgent` Identity Bypass, High-Precision Timing Side-Channel | `0102013` |
 
-## Detailed Writeups
+---
 
-- [Stage 1 Writeup](cloud-escape/WRITEUP_STAGE1.md)
-- [Stage 2 Writeup](cloud-escape/WRITEUP_STAGE2.md)
-- [Combined Summary](cloud-escape/WRITEUP.md)
+## 📖 Detailed Writeups
+
+Each stage required unique lateral movement and bypassing of severe network isolation constraints within an AWS VPC environment. 
+
+🔗 **[Stage 1: Have Some Faith — Deep Dive Writeup](cloud-escape/WRITEUP_STAGE1.md)**
+- Detailed breakdown of exploiting a wildcard GitHub OIDC trust policy.
+- Automated API Gateway command injection.
+- Bypassing strict VPC network isolation by leveraging the default AWS Route 53 VPC Resolver (`169.254.169.253`) for DNS exfiltration.
+
+🔗 **[Stage 2: Miss Me Yet? — Deep Dive Writeup](cloud-escape/WRITEUP_STAGE2.md)**
+- Analysis of a leaked S3 bucket policy via a CloudFront website.
+- Overriding signed HTTP headers inside `boto3` to spoof `User-Agent: Amazon CloudFront` and satisfy IAM policy conditions.
+- Developing a 100% accurate, multi-threaded Blind Timing Side-Channel Oracle to leak data from an isolated Lambda environment.
+
+🔗 **[Combined Stage Overview](cloud-escape/WRITEUP.md)**
+
+---
+
+*Write-up by Agent freecandy — Cloud Escape CTF 2026*
