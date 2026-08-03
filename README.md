@@ -1,105 +1,104 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=F71111&center=true&vCenter=true&width=800&height=80&lines=%E2%98%81%EF%B8%8F+Cloud+Escape+CTF+2026;Operation+%22Miss+Me+Yet%3F%22;Full+Writeup+by+Agent+freecandy" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=42&pause=1000&color=F79211&center=true&vCenter=true&width=800&height=85&lines=AWS+Cloud+Escape+CTF+2026;Master+Security+Writeup;Operation+%22Miss+Me+Yet%3F%22" alt="Typing SVG" />
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/AWS-us--east--1-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Region" />
+    <img src="https://img.shields.io/badge/Service-IAM%20%7C%20Lambda%20%7C%20S3%20%7C%20API%20Gateway-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS Services" />
+    <img src="https://img.shields.io/badge/Category-Cloud%20Security%20%7C%20OIDC%20%26%20IAM-F79211?style=for-the-badge" alt="Category" />
+    <img src="https://img.shields.io/badge/Total%20Points-300%20PTS-00C7B7?style=for-the-badge" alt="Points" />
+    <img src="https://img.shields.io/badge/Status-Methodology%20Verified-2EA44F?style=for-the-badge" alt="Status" />
+  </p>
 </div>
 
-<div align="center">
-  <img src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" />
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" />
-  <img src="https://img.shields.io/badge/CTF-Hacking-FF0000?style=for-the-badge&logo=hackthebox&logoColor=white" />
-</div>
+---
 
-<br/>
+## 🎯 Executive Summary & Official Submission
 
-<details open>
-<summary><h2> 📖 Executive Summary & Official Submission </h2></summary>
+> [!IMPORTANT]  
+> **Campaign Overview:** This repository serves as the official security submission for the **Cloud Escape CTF 2026**. It documents the complete exploitation lifecycle, architectural mapping, and step-by-step methodologies used to penetrate a hardened AWS serverless environment across two challenge stages.
 
-Welcome to the comprehensive writeup repository for the **Cloud Escape CTF 2026**, organized by MAFAT (DDR&D) at the Israel Ministry of Defense and the C4I Cyber Defense Directorate.
-
-This repository serves as our **Official Mandatory Write-Up**. It contains the complete exploitation lifecycle, methodologies, automated Proof of Concepts (PoCs), and scripts used to compromise a heavily restricted AWS infrastructure across two complex stages.
-
-Our objective was to navigate through a deeply isolated Virtual Private Cloud (VPC), bypass strict Identity and Access Management (IAM) controls, and exfiltrate highly sensitive data without standard internet egress.
-</details>
+<table>
+  <thead>
+    <tr>
+      <th width="120">Stage</th>
+      <th width="200">Challenge Name</th>
+      <th width="120">Points</th>
+      <th width="240">Core Technique</th>
+      <th width="320">Detailed Writeup Documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Stage 1</code></td>
+      <td><strong>"Have Some Faith"</strong></td>
+      <td><strong>100 PTS</strong></td>
+      <td>OIDC Wildcard & DNS Tunneling</td>
+      <td>📄 <a href="cloud-escape/Stage_1_Have_Some_Faith.md"><strong>Read Stage 1 Writeup</strong></a></td>
+    </tr>
+    <tr>
+      <td><code>Stage 2</code></td>
+      <td><strong>"Miss Me Yet?"</strong></td>
+      <td><strong>200 PTS</strong></td>
+      <td>Header Injection & S3 Versioning</td>
+      <td>📄 <a href="cloud-escape/Stage_2_Miss_Me_Yet.md"><strong>Read Stage 2 Writeup</strong></a></td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
-## ✉️ The Adventure Begins
+## 🗺️ Master Architectural Threat Model
 
-Our journey began with a high-stakes transmission:
-> *"Your mission: penetrate a highly secure, custom-built cloud environment, navigate complex architectures, and extract the hidden data flags before time runs out."*
-
-With a massive $15,000 grand prize and a specific $3,000 bounty for **"out-of-the-box" creativity** on the line, we knew standard, noisy exploits wouldn't cut it. The challenge explicitly demanded mastering IAM permission management and complex VPC networking to identify subtle configuration gaps in simulated enterprise-grade architectures. Efficiency, speed, and accuracy were critical.
-
-Driven by the pursuit of the Creativity Award, we engineered two highly unconventional, sophisticated side-channel attacks to bypass modern defense concepts and exfiltrate the flags from completely blind environments.
-
----
-
-## 🏆 Captured Flags
-
-| Stage | Challenge Name | Difficulty | Status | Flag |
-| :---: | :--- | :---: | :---: | :--- |
-| **1** | Have Some Faith | <img src="https://img.shields.io/badge/High-FF0000?style=flat-square" /> | 🟢 **COMPLETED** | `1a1jelrlfg2yi2s0` |
-| **2** | Miss Me Yet? | <img src="https://img.shields.io/badge/Critical-8B0000?style=flat-square" /> | 🟡 **IN PROGRESS** | *[ANALYZING ORACLE DATA]* |
-
----
-
-## 🏗️ Attack Architecture & Methodologies
-
-The CTF environment was designed to prevent standard data exfiltration. The target Lambda functions were placed inside a VPC with **no NAT Gateway** (no outbound internet) and highly restrictive IAM policies. 
-
-### <img src="https://img.shields.io/badge/Stage_1-DNS_Exfiltration-blue?style=for-the-badge" />
-
-By exploiting a GitHub OIDC trust misconfiguration and a Lambda command injection vulnerability, we gained Remote Code Execution (RCE). We bypassed the internet blockade by forcing the Lambda to resolve a custom DNS subdomain containing the hex-encoded flag via the AWS Route 53 VPC Resolver.
+The following Mermaid diagram illustrates the AWS infrastructure across both challenge stages:
 
 ```mermaid
-graph LR
-    A[GitHub Actions] -->|AssumeRole| B(cicdRole)
-    B -->|POST Inject| C[API Gateway]
-    C --> D[Lambda]
-    D -->|Read| E[(S3 Bucket)]
-    D -->|DNS Query| F[VPC Resolver]
-    F -->|Extract| G[Attacker DNS]
-    style A fill:#24292e,color:#fff
-    style D fill:#f90,color:#fff
-    style E fill:#3b82f6,color:#fff
+graph TD
+    A["GitHub Actions: corgi branch"]
+    B["AWS IAM OIDC Provider"]
+    C["cicdRole Account: 009661764077"]
+    D["API Gateway: /dev/nslookupv2 Stage 1"]
+    E["API Gateway: /dev/code_exec Stage 2"]
+
+    subgraph VPC_Stage1 ["VPC Stage 1: Route 53 DNS Resolver Enabled"]
+        F["Lambda Function: nslookupv2"]
+        G["Route 53 DNS Resolver: 169.254.169.253"]
+    end
+
+    subgraph VPC_Stage2 ["VPC Stage 2: Outbound Network Isolated"]
+        H["Lambda Function: code_exec Account: 186769093912"]
+    end
+
+    subgraph S3_Resources ["Target S3 Storage Buckets"]
+        I["Bucket: codec4f26c862a321ef5 Stage 1 Flag"]
+        J["Bucket: userd8a2f72fe43094e8 Stage 2 Target"]
+        K["Bucket: logd8a2f72fe43094e8 S3 Access Logs"]
+    end
+
+    L["External DNS Listener: dnslog.cn"]
+
+    A -->|1. OIDC AssumeRole - Wildcard sub| B
+    B -->|2. Grant Credentials| C
+    C -->|3. POST Command Injection| D
+    C -->|4. POST Base64 Python Script| E
+    D -->|5. Execute Subprocess| F
+    F -->|6. Read Flag from S3| I
+    F -->|7. Exfiltrate via Route53 DNS Query| G
+    G -->|8. External DNS Lookup| L
+    E -->|9. Invoke Sandbox Execution| H
+    H -->|10. Boto3 Header Injection User-Agent| J
+    H -->|11. Enumerate Object Versions and Logs| K
 ```
 
-### <img src="https://img.shields.io/badge/Stage_2-Timing_Oracle-orange?style=for-the-badge" />
+---
 
-Facing an arbitrary code execution endpoint (`exec`) that swallowed all `stdout` and exceptions, we bypassed an S3 Bucket Policy by spoofing the `aws:UserAgent` using `boto3` event hooks. We are currently developing a multi-threaded blind timing oracle (`time.sleep`) to exfiltrate the flag character-by-character based on API response latency. 
+## 📂 Documentation Directory & Writeups
 
-```mermaid
-graph LR
-    A[Attacker] -->|Base64 Payload| B[API Gateway]
-    B -->|exec| C[Lambda]
-    C -.->|Spoof User-Agent| D[boto3]
-    D -->|Read Flag| E[(Test Site S3)]
-    C -->|time.sleep| C
-    C -->|Latency Output| A
-    style A fill:#ef4444,color:#fff
-    style C fill:#f90,color:#fff
-    style E fill:#3b82f6,color:#fff
-```
+- 🛡️ **[Master Challenge Overview](cloud-escape/README.md)**: Combined executive narrative and architectural mapping of both stages.
+- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Complete step-by-step documentation of Git commit forensics, OIDC wildcard trust exploitation, command injection in `/dev/nslookupv2`, and Route 53 DNS exfiltration (`1a1jelrlfg2yi2s0`).
+- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Complete step-by-step documentation of CloudFront `/docs.html` policy discovery, VPC network isolation analysis, Boto3 `User-Agent` header spoofing hooks, S3 Server Access Logs (`logd8a2f72fe43094e8`), and direct S3 versioning/Delete Marker enumeration.
 
 ---
 
-## 🛠️ How to Implement & Reproduce
-
-For security researchers and CTF judges reviewing this submission, we have structured this repository to be fully transparent and reproducible:
-
-1. **Explore the Narratives**: Start with the detailed write-ups in the `cloud-escape/` directory to understand the architectural flaws and the logic behind the exploits.
-2. **Review the PoCs**: Our automated exploit chains are located in the `.github/workflows/` directory. These GitHub Actions files (`stage1.yml` and `stage2.yml`) demonstrate exactly how we assumed the OIDC roles and triggered the blind exfiltration pipelines.
-3. **Analyze the Scripts**: The exact payloads, `boto3` header injection techniques, and timing side-channel scripts are fully documented in the writeups. You can copy these payloads directly to test similar air-gapped environments.
-
----
-
-## 📂 Documentation Directory
-
-* 🛡️ **[Combined Technical Overview](cloud-escape/WRITEUP.md)**: A master document detailing the full attack narrative.
-* 🚀 **[Stage 1 Deep Dive](cloud-escape/WRITEUP_STAGE1.md)**: OIDC exploitation, recon, and DNS side-channel payloads.
-* ⏱️ **[Stage 2 Deep Dive](cloud-escape/WRITEUP_STAGE2.md)**: CloudFront policy analysis, header injection, and the timing oracle (WIP).
-
----
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=400&size=20&pause=2000&color=888888&center=true&vCenter=true&width=600&height=50&lines=%22In+the+cloud,+there+is+no+such+thing+as+perfect+isolation.%22" alt="Quote" />
+  <sub>🛡️ Documented by <b>Agent freecandy</b> • Cloud Escape CTF 2026 • Advanced Cloud Infrastructure Security</sub>
 </div>
