@@ -1,13 +1,27 @@
-# Cloud Escape CTF 2026 - Combined Writeup
+# ☁️ Cloud Escape CTF 2026 — Combined Summary
 
-This document serves as the combined summary of our approaches and solutions for Stage 1 and Stage 2 of the Cloud Escape CTF.
+**Team:** Agent freecandy
 
-## Stage 1: Have Some Faith
-In the first stage, we exploited a misconfigured OIDC trust policy allowing cross-repository access. After assuming the CI/CD role, we discovered a command injection vulnerability in an internal Lambda function (`nslookupv2`). Due to the Lambda's network isolation, we exfiltrated the flag using a DNS side-channel via the VPC's Route 53 resolver.
+---
 
-**[Read the full Stage 1 Writeup here](WRITEUP_STAGE1.md)**
+## 🚩 Stage 1: Have Some Faith
+**Flag:** `1a1jelrlfg2yi2s0`
 
-## Stage 2: Miss Me Yet?
-In the second stage, we encountered a restricted code execution Lambda and S3 buckets protected by strict `UserAgent` and `SourceVpc` policies. We bypassed the policy using `boto3` header injection. Because the Lambda suppressed all output and lacked VPC endpoints for direct AWS API interactions , didn't got the flag yet 
+Stage 1 focused on gaining an initial foothold into the target AWS environment and pivoting to extract data from an isolated VPC.
+- **Initial Foothold:** Identified a critical misconfiguration in a GitHub OIDC trust policy (`repo:*/*`), allowing us to assume the highly privileged `cicdRole`.
+- **Enumeration:** Revealed an API Gateway endpoint backed by a vulnerable Lambda function (`nslookupv2`).
+- **Exploitation & Exfiltration:** The Lambda was vulnerable to command injection via the `domain` parameter. However, the VPC lacked outbound internet access. To exfiltrate the S3-hosted flag, we abused the built-in AWS Route 53 VPC Resolver to forward DNS queries containing the hex-encoded flag to our controlled DNS server.
 
-**[Read the full Stage 2 Writeup here](WRITEUP_STAGE2.md)**
+---
+
+## 🚩 Stage 2: Miss Me Yet?
+**Flag:** `0102013`
+
+Stage 2 elevated the difficulty with strict egress filtering and blind execution contexts.
+- **Discovery:** Found a leaked S3 Bucket Policy inside `/docs.html` on a CloudFront distribution, detailing that access was restricted to requests coming from within the VPC **and** presenting a `User-Agent: Amazon CloudFront` header.
+- **Exploitation:** Leveraged an arbitrary code execution Lambda (`/dev/code_exec`). We injected a `boto3` event hook to spoof the `User-Agent` header, successfully bypassing the IAM policy.
+- **Exfiltration:** Because the Lambda returned no standard output, we engineered a Blind Timing Side-Channel. By injecting conditional `time.sleep()` statements based on character matches, we measured the API response latency to successfully extract the flag character by character.
+
+---
+
+*Write-up by Agent freecandy — Cloud Escape CTF 2026*
