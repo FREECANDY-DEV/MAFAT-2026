@@ -59,28 +59,23 @@ The following Mermaid diagram illustrates the AWS infrastructure, the network is
 
 ```mermaid
 graph TD
-    classDef client fill:#2b303b,stroke:#f79211,stroke-width:2px,color:#fff;
-    classDef aws fill:#232f3e,stroke:#ff9900,stroke-width:2px,color:#fff;
-    classDef vpc fill:#1a202c,stroke:#e2e8f0,stroke-width:2px,stroke-dasharray: 5 5,color:#fff;
-    classDef s3 fill:#1f2937,stroke:#38bdf8,stroke-width:2px,color:#fff;
+    A["Participant / Client (base64 Python Payload)"]
+    B["API Gateway (/dev/code_exec)"]
 
-    A["👤 Participant / Client<br/>(base64 Python Payload)"] ::: client
-    B["🌐 API Gateway<br/>(/dev/code_exec)"] ::: aws
-
-    subgraph VPC ["🔒 AWS Isolated VPC (No Internet / DNS Egress)"]
-        C["⚡ AWS Lambda Engine<br/>Account: 186769093912<br/>(Response Masked: 200 / 500)"] ::: aws
+    subgraph VPC ["AWS Isolated VPC (No Internet / DNS Egress)"]
+        C["AWS Lambda Engine Account: 186769093912 (Response Masked: 200 / 500)"]
     end
 
-    subgraph S3_Layer ["🪣 AWS S3 Target Buckets"]
-        D["📦 userd8a2f72fe43094e8<br/>(Object Versioning Enabled)"] ::: s3
-        E["📜 logd8a2f72fe43094e8<br/>(S3 Server Access Logs)"] ::: s3
+    subgraph S3_Layer ["AWS S3 Target Buckets"]
+        D["userd8a2f72fe43094e8 (Object Versioning Enabled)"]
+        E["logd8a2f72fe43094e8 (S3 Server Access Logs)"]
     end
 
     A -->|1. POST JSON Payload| B
     B -->|2. Invoke Execution| C
-    C -->|3. Boto3 Header Injection<br/>User-Agent: Amazon CloudFront| D
+    C -->|3. Boto3 Header Injection User-Agent: Amazon CloudFront| D
     D -.->|4. Delivery of Audit Events| E
-    C -->|5. Enumerate Version History<br/>s3:ListBucketVersions| D
+    C -->|5. Enumerate Version History s3:ListBucketVersions| D
 ```
 
 ---
@@ -151,11 +146,11 @@ We analyzed the execution endpoint at `https://l8ssyaz69f.execute-api.us-east-1.
 
 ```mermaid
 flowchart LR
-    subgraph Constraints ["⚡ Lambda Runtime Security Constraints"]
+    subgraph Constraints ["Lambda Runtime Security Constraints"]
         direction TB
-        C1["🚫 1. Outbound Network Isolation<br/>HTTP/HTTPS/DNS blocked at VPC edge"]
-        C2["🎭 2. API Response Masking<br/>Suppresses stdout & returns static strings"]
-        C3["🔑 3. VPC Execution Role<br/>Matches aws:SourceVpc condition in IAM"]
+        C1["1. Outbound Network Isolation: HTTP/HTTPS/DNS blocked at VPC edge"]
+        C2["2. API Response Masking: Suppresses stdout & returns static strings"]
+        C3["3. VPC Execution Role: Matches aws:SourceVpc condition in IAM"]
     end
 ```
 
