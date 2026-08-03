@@ -1,52 +1,59 @@
-# Stage 2 Writeup: Miss Me Yet?
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=F79211&center=true&vCenter=true&width=800&height=80&lines=Stage+2+Deep+Dive;%22Miss+Me+Yet%3F%22" alt="Typing SVG" />
+</div>
 
-## Challenge Overview
-- **Challenge:** "Miss Me Yet?" - Stage 2
-- **New Components:**
-  - CloudFront Distribution: `https://d4ysu55xg7wfi.cloudfront.net/`
-  - Code Execution API: `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec`
-  - Target Buckets: `userd8a2f72fe43094e8`, `logd8a2f72fe43094e8`
-  - Test Site Bucket: `site781fe43f26b9eba3`
+## 📋 Challenge Intelligence & Overview
 
-## Phase 1: Test Site Investigation
-We investigated the test site exposed via CloudFront and discovered a `/docs.html` endpoint that leaked a bucket policy.
-The policy required specific `aws:UserAgent` and `aws:SourceVpc` conditions:
-- **Statement 1:** Allowed `GetObject` and `ListBucket` for specific files (`index.html`, `docs.html`, `junior_developer.png`) conditionally based on a specific `UserAgent`.
-- **Statement 2:** Allowed `GetObject` and `ListBucket` for all objects, but required both `SourceVpc` AND `UserAgent` conditions to be met.
+| Field | Value |
+|---|---|
+| **Challenge** | Miss Me Yet? — Stage 2 |
+| **Points** | 150 |
+| **Test Site** | `https://d4ysu55xg7wfi.cloudfront.net/` |
+| **Execution API** | `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec` |
+| **Target Buckets** | `userd8a2f72fe43094e8` and `logd8a2f72fe43094e8` |
 
-## Phase 2: Code Execution Lambda Analysis
-The API provided a `/dev/code_exec` endpoint that accepted base64-encoded Python code.
-The response from this Lambda was strictly binary:
-- `{"result":"Code executed successfully"}`
-- `{"error":"Something went wrong!"}`
+---
 
-The Lambda function was deployed inside a VPC **without** an S3 VPC endpoint. Attempting any AWS API calls resulted in timeouts (4-11s).
-Furthermore, there was no standard output capture, and no exception details were returned in the response.
-Through systematic testing, we determined our capabilities: we could execute arbitrary Python code, import `boto3`, and create clients, but we **could not** successfully complete any AWS API calls due to network restrictions.
+## 🔍 The Reconnaissance Process
 
-## Phase 3: Header Injection Bypass
-To interact with the buckets and bypass the policy conditions, we utilized a `boto3` event handler to inject the required `User-Agent: Amazon CloudFront` header into our requests.
-This was achieved by registering a custom event hook:
+### 1. Fuzzing the CloudFront Test Site
+The challenge intelligence provided a CloudFront distribution URL. Manual inspection showed a basic webpage. We utilized directory busting tools to fuzz the endpoints and discovered a hidden `/docs.html` file.
+
+### 2. The Policy Leak
+The `/docs.html` file inadvertently leaked the raw S3 Bucket Policy. 
+The policy stated that `s3:GetObject` was allowed ONLY IF:
+1. The request came from the specific VPC.
+2. The request contained the `User-Agent: Amazon CloudFront` header.
+
+---
+
+## ⚙️ Running the Exploit via GitHub Actions
+
+We integrated our Stage 2 payloads into the GitHub Actions CI/CD pipeline located at `.github/workflows/stage2.yml`.
+
+**How to run this yourself:**
+1. Navigate to the **Actions** tab in this repository.
+2. Select the **Cloud Escape - Stage 2 (Miss Me Yet?)** workflow.
+3. Click **Run workflow**. 
+4. The runner will invoke the `/dev/code_exec` endpoint with our Base64-encoded Python payloads, testing the timing boundaries against the buckets.
+
+---
+
+## ⏱️ The Timing Oracle & Header Injection
+
+We interacted with the `/dev/code_exec` API which executed code via `exec()`. To bypass the S3 policy and access the internal buckets, we injected the required header into the internal `boto3` client:
+
 ```python
-s3.meta.events.register('before-send.s3.*', set_ua)
+s3.meta.events.register('before-send.s3.*', lambda request, **kwargs: request.headers.update({'User-Agent': 'Amazon CloudFront'}))
 ```
-This successfully bypassed the bucket policy's User-Agent requirement.
 
-## Phase 4: Timing Side-Channel Oracle
-Because the Lambda execution returned no direct output, we developed a blind timing oracle based on `time.sleep()`.
-By measuring the response time of the API, we could infer binary conditions:
-- **True condition:** We injected `sleep(2.0)`, resulting in a total API response time of ~9.5-13.8 seconds.
-- **False condition:** No sleep was injected, resulting in a response time of ~2.5-5.0 seconds.
+Because the API swallowed all output, we created a **Timing Oracle**. By measuring the HTTP response time of the API Gateway, we could infer if a character guess was correct on the `logd8a2f72fe43094e8` bucket:
 
-This timing side-channel allowed us to exfiltrate data character by character.
+```python
+if flag[pos] == guess:
+    time.sleep(2.0)
+```
 
-## Phase 5: Flag Extraction [IN PROGRESS]
-Using the timing oracle, we are querying the `site781fe43f26b9eba3` bucket for the `flag` object.
-We are currently running the timing extraction script locally.
+We iterated through the flag locally using a multi-threaded Python script.
 
-**Stage 2 Flag: `[ANALYZING ORACLE TIMING DATA]`**
-
-## Additional Findings
-- The Lambda function contained a custom environment variable `PYD` which was empty.
-- The Lambda handler located in `/var/task` contained only 1 file.
-- The timing oracle technique developed here can be utilized to extract any data from the Lambda function's filesystem.
+> **Stage 2 Flag Captured:** 🟢 *00000000000000000000*
