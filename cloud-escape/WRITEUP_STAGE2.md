@@ -25,6 +25,60 @@ The policy stated that `s3:GetObject` was allowed ONLY IF:
 1. The request came from the specific VPC.
 2. The request contained the `User-Agent: Amazon CloudFront` header.
 
+<details>
+<summary><b>View docs.html (Bucket Policy Leak)</b></summary>
+
+```json
+System Documentation
+This is the bucket_policy.json I applied to this site.
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Statement1",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+			],
+            "Resource": [
+                "arn:aws:s3:::REDACTED/index.html",
+                "arn:aws:s3:::REDACTED/docs.html",
+                "arn:aws:s3:::REDACTED/junior_developer.png",
+                "arn:aws:s3:::REDACTED"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "aws:UserAgent": REDACTED
+                }
+            }
+        },
+        {
+            "Sid": "Statement2",
+            "Principal": "*",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+			],
+            "Resource": [
+                "arn:aws:s3:::REDACTED/*",
+                "arn:aws:s3:::REDACTED"
+			],
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceVpc": REDACTED,
+                    "aws:UserAgent": REDACTED
+                }
+            }
+        }
+    ]
+}
+End of file.
+```
+</details>
+
 ---
 
 ## ⚙️ Running the Exploit via GitHub Actions
