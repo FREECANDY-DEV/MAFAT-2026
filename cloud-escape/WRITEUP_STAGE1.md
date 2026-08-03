@@ -137,7 +137,7 @@ We created an automated GitHub Actions workflow on a branch named `corgi` (`.git
 
 ```mermaid
 flowchart LR
-    subgraph Enumeration ["🔍 Cloud Infrastructure Discovery"]
+    subgraph Enumeration ["Cloud Infrastructure Discovery"]
         direction TB
         E1["1. S3 Buckets Discovered: codec4f26c862a321ef5"]
         E2["2. Lambda Functions Discovered: nslookupv2"]
