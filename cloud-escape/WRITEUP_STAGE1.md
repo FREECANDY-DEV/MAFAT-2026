@@ -60,26 +60,26 @@ The following Mermaid diagram illustrates the end-to-end attack chain, starting 
 
 ```mermaid
 graph TD
-    A["GitHub Actions (corgi branch)"]
+    A["GitHub Actions: corgi branch"]
     B["AWS IAM OIDC Provider"]
-    C["cicdRole (Account: 009661764077)"]
-    D["API Gateway (/dev/nslookupv2)"]
+    C["cicdRole Account: 009661764077"]
+    D["API Gateway: /dev/nslookupv2"]
 
-    subgraph VPC ["AWS Isolated VPC (No Internet Egress)"]
+    subgraph VPC ["AWS Isolated VPC"]
         E["Lambda Function: nslookupv2"]
     end
 
     subgraph AWS_Resources ["Target AWS Resources"]
         F["S3 Bucket: codec4f26c862a321ef5"]
-        G["Route 53 VPC DNS Resolver (169.254.169.253)"]
+        G["Route 53 VPC DNS Resolver: 169.254.169.253"]
     end
 
-    H["External DNS Listener (dnslog.cn)"]
+    H["External DNS Listener: dnslog.cn"]
 
-    A -->|1. AssumeRoleWithWebIdentity (Wildcard sub)| B
+    A -->|1. AssumeRoleWithWebIdentity - Wildcard sub| B
     B -->|2. Grant Credentials| C
     C -->|3. POST Command Injection Payload| D
-    D -->|4. Invoke subprocess.run(shell=True)| E
+    D -->|4. Invoke subprocess.run with shell=True| E
     E -->|5. Read s3://codec4f26c862a321ef5/flag.txt| F
     E -->|6. DNS Query: FLAG_HEX.dnslog.cn| G
     G -->|7. Forward DNS Query Outward| H
