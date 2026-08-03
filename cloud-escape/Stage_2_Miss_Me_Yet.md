@@ -250,17 +250,102 @@ versions_resp = s3.list_object_versions(Bucket='userd8a2f72fe43094e8')
 
 ---
 
-## 🚀 Active Investigation Paths & Next Action Items
+### <samp>STEP 06</samp> ✦ CloudTrail & Audit Log Principal Analysis (`logd8a2f72fe43094e8`)
+A full historical audit of all **97 CloudTrail JSON log records** stored inside `logd8a2f72fe43094e8` provided a comprehensive map of the administrative identities and User-Agent headers operating within the environment.
 
-1. **Full Version History Retrieval**:
-   - Extract the complete list of non-current `Key` names, `VersionId` identifiers, and `DeleteMarker` entries from `s3.list_object_versions()`.
-   - Restore and inspect historical object contents using `s3.get_object(Bucket=..., Key=..., VersionId=...)`.
+We enumerated every unique IAM Principal and client signature across the transaction history:
 
-2. **Statement 2 Header Correlation via Audit Logs**:
-   - Cross-reference administrative `userAgent` strings recorded in `logd8a2f72fe43094e8` to identify the specific header value required by `Statement2` to unlock unrestricted read access across `userd8a2f72fe43094e8/*`.
+```json
+{
+  "scanned_records": 97,
+  "unique_iam_principals": [
+    "AROAQEP7C2HWZYKJGPIHM:GitHubActions",
+    "AROARYWSMSYIHGV6HRCCY:user_function",
+    "AROARYWSMSYIPWMOE25U2:d6d7ee068aa0"
+  ],
+  "unique_user_agents": [
+    "Amazon CloudFront",
+    "aws-cli/2.36.2 (Ubuntu 24; s3.cp / s3.ls)",
+    "Boto3/1.43.62 md/Botocore#1.43.62 (Lambda CPython 3.13/3.14)",
+    "Python-urllib/3.14"
+  ]
+}
+```
+
+<table>
+  <thead>
+    <tr>
+      <th width="30%">IAM Principal Identity</th>
+      <th width="70%">Role & Operational Scope</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>GitHubActions</code></td>
+      <td>CI/CD automated deployment pipeline responsible for staging initial web assets and bucket policies.</td>
+    </tr>
+    <tr>
+      <td><code>user_function</code></td>
+      <td>The AWS Lambda execution identity (<code>lambdaRole</code>) running inside the isolated VPC.</td>
+    </tr>
+    <tr>
+      <td><code>d6d7ee068aa0</code></td>
+      <td>Participant / challenge session identity (<code>ctf_participant_role</code>) querying logs and assets.</td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+### <samp>STEP 07</samp> ✦ VPC Endpoint Boundary & IAM Permission Mapping
+To map the exact security perimeter of the Lambda execution role (`lambdaRole`), we tested API reachability across multiple AWS services from within `/dev/code_exec`:
+
+1. **VPC Outbound Network Boundary**:
+   - Outbound requests to AWS control plane endpoints (`sts:GetCallerIdentity`, `ec2:DescribeVpcs`, `iam:GetRole`, `secretsmanager:ListSecrets`, `ssm:DescribeParameters`, `lambda:ListFunctions`) consistently time out.
+   - This empirically validates that the VPC has **zero outbound Internet or NAT routing**, confining all communication strictly to the AWS S3 VPC Endpoint (`s3.us-east-1.amazonaws.com`).
+2. **HTTP Header Condition Evaluation**:
+   - Direct HTTP GET requests via `urllib.request` with `User-Agent: Amazon CloudFront` return `200 OK` for allowed public assets (`index.html`, `docs.html`, `junior_developer.png`).
+   - This confirms that AWS IAM condition key `aws:UserAgent` is evaluated directly against the HTTP `User-Agent` request header at the VPC endpoint layer, without requiring SDK-level request signing for public policy statements.
+
+---
+
+## 🚀 Active Investigation Paths & Summary Table
+
+<table>
+  <thead>
+    <tr>
+      <th width="25%">Investigation Area</th>
+      <th width="20%">Status</th>
+      <th width="55%">Technical Takeaway</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>S3 Bucket Policy</code></td>
+      <td><img src="https://img.shields.io/badge/Completed-2EA44F?style=flat-square" alt="Completed" /></td>
+      <td>Leaked via <code>/docs.html</code>; Statement 1 and Statement 2 conditions mapped.</td>
+    </tr>
+    <tr>
+      <td><code>CloudTrail Logs</code></td>
+      <td><img src="https://img.shields.io/badge/Completed-2EA44F?style=flat-square" alt="Completed" /></td>
+      <td>97 records parsed; CI/CD, Lambda, and participant principal ARNs identified.</td>
+    </tr>
+    <tr>
+      <td><code>VPC Perimeter</code></td>
+      <td><img src="https://img.shields.io/badge/Completed-2EA44F?style=flat-square" alt="Completed" /></td>
+      <td>Zero egress validated; only S3 VPCe traffic allowed.</td>
+    </tr>
+    <tr>
+      <td><code>S3 Versioning</code></td>
+      <td><img src="https://img.shields.io/badge/In%20Progress-F79211?style=flat-square" alt="In Progress" /></td>
+      <td>Multiple historical object versions and delete markers confirmed on target bucket.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
 <div align="center">
   <sub>🛡️ Documented by <b>Agent freecandy</b> • Cloud Escape CTF 2026 • Advanced Cloud Infrastructure Security</sub>
 </div>
+
