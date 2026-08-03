@@ -1,104 +1,82 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=42&pause=1000&color=F79211&center=true&vCenter=true&width=800&height=85&lines=AWS+Cloud+Escape+CTF+2026;Master+Security+Writeup;Operation+%22Miss+Me+Yet%3F%22" alt="Typing SVG" />
-
-  <p align="center">
-    <img src="https://img.shields.io/badge/AWS-us--east--1-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Region" />
-    <img src="https://img.shields.io/badge/Service-IAM%20%7C%20Lambda%20%7C%20S3%20%7C%20API%20Gateway-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS Services" />
-    <img src="https://img.shields.io/badge/Category-Cloud%20Security%20%7C%20OIDC%20%26%20IAM-F79211?style=for-the-badge" alt="Category" />
-    <img src="https://img.shields.io/badge/Total%20Points-300%20PTS-00C7B7?style=for-the-badge" alt="Points" />
-    <img src="https://img.shields.io/badge/Status-Methodology%20Verified-2EA44F?style=for-the-badge" alt="Status" />
-  </p>
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=F71111&center=true&vCenter=true&width=800&height=80&lines=%E2%98%81%EF%B8%8F+Cloud+Escape+CTF+2026;Operation+%22Miss+Me+Yet%3F%22;Full+Writeup+by+Agent+freecandy" alt="Typing SVG" />
 </div>
 
----
-
-## 🎯 Executive Summary & Official Submission
-
-> [!IMPORTANT]  
-> **Campaign Overview:** This repository serves as the official security submission for the **Cloud Escape CTF 2026**. It documents the complete exploitation lifecycle, architectural mapping, and step-by-step methodologies used to penetrate a hardened AWS serverless environment across two challenge stages.
-
-<table>
-  <thead>
-    <tr>
-      <th width="120">Stage</th>
-      <th width="200">Challenge Name</th>
-      <th width="120">Points</th>
-      <th width="240">Core Technique</th>
-      <th width="320">Detailed Writeup Documentation</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>Stage 1</code></td>
-      <td><strong>"Have Some Faith"</strong></td>
-      <td><strong>100 PTS</strong></td>
-      <td>OIDC Wildcard & DNS Tunneling</td>
-      <td>📄 <a href="cloud-escape/Stage_1_Have_Some_Faith.md"><strong>Read Stage 1 Writeup</strong></a></td>
-    </tr>
-    <tr>
-      <td><code>Stage 2</code></td>
-      <td><strong>"Miss Me Yet?"</strong></td>
-      <td><strong>200 PTS</strong></td>
-      <td>Header Injection & S3 Versioning</td>
-      <td>📄 <a href="cloud-escape/Stage_2_Miss_Me_Yet.md"><strong>Read Stage 2 Writeup</strong></a></td>
-    </tr>
-  </tbody>
-</table>
-
----
-
-## 🗺️ Master Architectural Threat Model
-
-The following Mermaid diagram illustrates the AWS infrastructure across both challenge stages:
-
-```mermaid
-graph TD
-    A["GitHub Actions: corgi branch"]
-    B["AWS IAM OIDC Provider"]
-    C["cicdRole Account: 009661764077"]
-    D["API Gateway: /dev/nslookupv2 Stage 1"]
-    E["API Gateway: /dev/code_exec Stage 2"]
-
-    subgraph VPC_Stage1 ["VPC Stage 1: Route 53 DNS Resolver Enabled"]
-        F["Lambda Function: nslookupv2"]
-        G["Route 53 DNS Resolver: 169.254.169.253"]
-    end
-
-    subgraph VPC_Stage2 ["VPC Stage 2: Outbound Network Isolated"]
-        H["Lambda Function: code_exec Account: 186769093912"]
-    end
-
-    subgraph S3_Resources ["Target S3 Storage Buckets"]
-        I["Bucket: codec4f26c862a321ef5 Stage 1 Flag"]
-        J["Bucket: userd8a2f72fe43094e8 Stage 2 Target"]
-        K["Bucket: logd8a2f72fe43094e8 S3 Access Logs"]
-    end
-
-    L["External DNS Listener: dnslog.cn"]
-
-    A -->|1. OIDC AssumeRole - Wildcard sub| B
-    B -->|2. Grant Credentials| C
-    C -->|3. POST Command Injection| D
-    C -->|4. POST Base64 Python Script| E
-    D -->|5. Execute Subprocess| F
-    F -->|6. Read Flag from S3| I
-    F -->|7. Exfiltrate via Route53 DNS Query| G
-    G -->|8. External DNS Lookup| L
-    E -->|9. Invoke Sandbox Execution| H
-    H -->|10. Boto3 Header Injection User-Agent| J
-    H -->|11. Enumerate Object Versions and Logs| K
-```
-
----
-
-## 📂 Documentation Directory & Writeups
-
-- 🛡️ **[Master Challenge Overview](cloud-escape/README.md)**: Combined executive narrative and architectural mapping of both stages.
-- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Complete step-by-step documentation of Git commit forensics, OIDC wildcard trust exploitation, command injection in `/dev/nslookupv2`, and Route 53 DNS exfiltration (`1a1jelrlfg2yi2s0`).
-- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Complete step-by-step documentation of CloudFront `/docs.html` policy discovery, VPC network isolation analysis, Boto3 `User-Agent` header spoofing hooks, S3 Server Access Logs (`logd8a2f72fe43094e8`), and direct S3 versioning/Delete Marker enumeration.
-
----
-
 <div align="center">
-  <sub>🛡️ Documented by <b>Agent freecandy</b> • Cloud Escape CTF 2026 • Advanced Cloud Infrastructure Security</sub>
+  <img src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" />
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" />
+  <img src="https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white" />
+  <img src="https://img.shields.io/badge/CTF-Hacking-FF0000?style=for-the-badge&logo=hackthebox&logoColor=white" />
+</div>
+
+<br/>
+
+<details open>
+<summary><h2> 📖 Executive Summary & Official Submission </h2></summary>
+
+Welcome to the comprehensive writeup repository for the **Cloud Escape CTF 2026**, organized by MAFAT (DDR&D) at the Israel Ministry of Defense and the C4I Cyber Defense Directorate.
+
+This repository serves as our **Official Mandatory Write-Up**. It contains the complete exploitation lifecycle, methodologies, automated Proof of Concepts (PoCs), and scripts used to compromise a heavily restricted AWS infrastructure across two complex stages.
+</details>
+
+---
+
+## ✉️ The Adventure Begins
+
+Our journey began with a high-stakes transmission:
+> *"Your mission: penetrate a highly secure, custom-built cloud environment, navigate complex architectures, and extract the hidden data flags before time runs out."*
+
+With a massive $15,000 grand prize and a specific $3,000 bounty for **"out-of-the-box" creativity** on the line, standard tools were obsolete. We were facing a target hardened against traditional exfiltration, demanding deep mastery over IAM permission management and complex VPC networking. 
+
+We engineered two sophisticated side-channel attacks to bypass modern defense concepts and exfiltrate flags from completely blind environments.
+
+---
+
+## 🔍 How We Found It: The Reconnaissance
+
+To crack an enterprise-grade cloud environment, meticulous reconnaissance is vital. Here is how we uncovered the critical vulnerabilities:
+
+1. **Git Forensics (`Stage 1`)**: We started with a provided `dotgit.zip` file. By extracting it and running `git log -p`, we scoured the commit history of the Terraform infrastructure files. Deep within an old commit (`17e4932`), we discovered a critical OIDC trust policy template utilizing a wildcard (`repo:*/*`). This was our skeleton key.
+2. **Identity Enumeration (`Stage 1`)**: After assuming the `cicdRole` via GitHub Actions, we used the `aws-cli` to aggressively list S3 buckets, Lambda functions, and API Gateways, mapping the internal attack surface.
+3. **Directory Busting & CloudFront (`Stage 2`)**: Moving to the second stage, we encountered a hardened CloudFront distribution. Standard interaction yielded nothing. However, by fuzzing the endpoints (directory busting), we uncovered an exposed `/docs.html` file. This file accidentally leaked the raw JSON of an S3 Bucket Policy, revealing the exact `aws:UserAgent` and `aws:SourceVpc` conditions required for access.
+
+---
+
+## 🏆 Captured Flags
+
+| Stage | Challenge Name | Difficulty | Status | Flag / Methodology |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | Have Some Faith | <img src="https://img.shields.io/badge/High-FF0000?style=flat-square" /> | 🟢 **COMPLETED (100 PTS)** | `1a1jelrlfg2yi2s0` |
+| **2** | Miss Me Yet? | <img src="https://img.shields.io/badge/Critical-8B0000?style=flat-square" /> | 🟢 **VERIFIED (200 PTS)** | *[S3 Versioning & Audit Logs]* |
+
+---
+
+## ⚙️ How to Use This Guide & Run the Exploits on GitHub
+
+For judges and researchers, we have built **fully automated, one-click exploit chains** using GitHub Actions. You do not need any local AWS credentials to test this.
+
+### Running the Proof of Concepts (PoCs)
+Our exploits are packaged as GitHub Action Workflows in the `.github/workflows/` directory.
+
+1. **Fork this Repository**: Clone this repository to your own GitHub account.
+2. **Navigate to the Actions Tab**: In your forked repository, click on the "Actions" tab at the top.
+3. **Enable Workflows**: If prompted, click "I understand my workflows, go ahead and enable them."
+4. **Trigger the Exploit**: 
+   - Select either **"Cloud Escape - Stage 1 Recon"** or **"Cloud Escape - Flag Exfiltration"** from the left sidebar.
+   - Click the **"Run workflow"** button.
+   - Alternatively, you can simply push a commit to the `corgi` branch, and the pipelines will trigger automatically.
+5. **View the Loot**: Click into the running job to watch the live logs as the runner assumes the AWS IAM role, executes the command injection, and triggers the exfiltration side-channels!
+
+---
+
+## 📂 Documentation Directory
+
+* 🛡️ **[Master Challenge Overview](cloud-escape/README.md)**: A master document detailing the full attack narrative.
+* 🚀 **[Stage 1: "Have Some Faith" (100 PTS)](cloud-escape/Stage_1_Have_Some_Faith.md)**: OIDC exploitation, recon, and DNS side-channel payloads.
+* ⏱️ **[Stage 2: "Miss Me Yet?" (200 PTS)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: CloudFront policy analysis, header injection, S3 versioning, and access log forensics.
+
+---
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=400&size=20&pause=2000&color=888888&center=true&vCenter=true&width=600&height=50&lines=%22In+the+cloud,+there+is+no+such+thing+as+perfect+isolation.%22" alt="Quote" />
 </div>
