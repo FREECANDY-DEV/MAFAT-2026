@@ -1,4 +1,5 @@
 name: Cloud Escape - Stage 1 (Have Some Faith)
+run-name: 🚀 Stage 1 - DNS Exfiltration PoC
 on:
   push:
     branches: [corgi]
