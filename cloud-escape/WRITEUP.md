@@ -26,7 +26,11 @@ Stage 2 elevates difficulty with strict egress filtering and a blind code-exec c
 - **Execution:** `/dev/code_exec` runs base64 Python with stdout suppressed; S3 path via VPC endpoint; Boto3/`urllib` User-Agent injection.
 - **Forensics:** CloudTrail principals, deny taxonomy, versioning hypothesis, boolean/timing oracles, UA→log exfil channel.
 
-**Full writeup:** [Stage_2_Miss_Me_Yet.md](Stage_2_Miss_Me_Yet.md)
+**Full writeup:** [Stage_2_Miss_Me_Yet.md](Stage_2_Miss_Me_Yet.md)  
+
+**Deep enum / secrets board:** [Stage2_Deep_Enumeration.md](Stage2_Deep_Enumeration.md) · [Stage2_AWS_Environment.md](Stage2_AWS_Environment.md)
+
+**Flag status:** not captured — remaining gap is Statement2 `aws:UserAgent` (do not use `000000…`).
 
 ---
 
