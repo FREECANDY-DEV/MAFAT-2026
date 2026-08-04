@@ -446,9 +446,55 @@ Or chunk the flag into UA markers and recover from the log bucket.
   </tbody>
 </table>
 
+
 ---
 
-## 🛡️ Remediation Notes (Defenders)
+## Swarm campaign findings (2026-08-04)
+
+> [!NOTE]
+> Parallel agent swarm (log-miner, unsigned-path, participant-VPC, alt-surface, creative-UA, repo-GHA, orchestrator) ran against live participant STS. **Flag still not captured.**
+
+### Corpus scale
+
+| Metric | Value |
+|:---|---:|
+| Log objects processed | **49 449** |
+| Successful data-plane events (`errorCode` absent) | **0** |
+| Unique User-Agent strings observed | **29 102** |
+| VPCe-sourced events (sample) | **2 280+** |
+
+### Confirmed exploit geometry
+
+```text
+UNSIGNED + path-style + Lambda ENI 10.0.0.29 + vpce-04104ef3d57a26557
+  → reaches S3 as Principal * (AWSAccount in logs)
+  → SourceVpc condition can be satisfied
+  → residual gate: exact aws:UserAgent (StringEquals)
+```
+
+| Probe | Result |
+|:---|:---|
+| Path-style UNSIGNED from Lambda | HTTP AccessDenied (wrong UA) · **VPCe logged** |
+| Virtual-hosted S3 from Lambda | DNS / connectivity fail |
+| lambdaRole signed GetObject | **Identity-based** AccessDenied |
+| participant signed GetObject | **Resource-based** AccessDenied until conditions |
+| Literal `Amazon CloudFront` (+ variants) | **Falsified** under VPCe anonymous probes |
+| `/var/task` | Only `lambda_function.py` (571 B pure base64→exec wrapper) |
+| `/opt` | **Empty** (no layer secrets / awscli) |
+| `docs.html` | Fully REDACTED policy template |
+| `junior_developer.png` | Laptop shows `…/docs.html`; no clean OCR of secret UA |
+
+### Residual (only open gate)
+
+1. Recover Statement2 **`aws:UserAgent`** exact string.  
+2. `GetObject flag.txt` with path-style UNSIGNED from `code_exec`.  
+3. Boolean / UA-exfil recovery of body → submit real flag.  
+4. **Never** submit `00000000000000000000`.
+
+
+---
+
+## Remediation Notes (Defenders)
 
 1. **Do not use `aws:UserAgent` as a security boundary** — trivially spoofable from any code-exec context that can set headers.  
 2. **Log buckets are intelligence gold** — data events leak principals, UAs, keys, ENIs, VPCe IDs, and deny reasons; they can also become an **exfil channel**.  
