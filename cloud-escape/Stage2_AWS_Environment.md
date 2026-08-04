@@ -15,7 +15,7 @@
 
 | Related docs |
 |:---:|
-| [Stage 2 writeup](Stage_2_Miss_Me_Yet.md) · [Deep enumeration](Stage2_Deep_Enumeration.md) · [Campaign hub](../README.md) |
+| [Technical report](Stage2_Technical_Report.md) · [Stage 2 writeup](Stage_2_Miss_Me_Yet.md) · [Deep enum](Stage2_Deep_Enumeration.md) · [Campaign hub](../README.md) |
 
 </div>
 

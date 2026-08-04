@@ -11,7 +11,20 @@
 ---
 
 > [!NOTE]
-> Live recon as `ctf_participant_role/d6d7ee068aa0`. No invented flags. Do **not** submit `000000…`.
+> Live recon as `ctf_participant_role`. No invented flags. Do **not** submit `000000…`.  
+> Canonical consolidation: **[Stage2_Technical_Report.md](Stage2_Technical_Report.md)**.
+
+## Latest network findings (pivot)
+
+| Probe from `code_exec` | Result |
+|:---|:---|
+| IMDS `169.254.169.254` | **Connection refused** — no `vpc-xxxx` recovery |
+| STS endpoint | Unreachable |
+| Path-style S3 | Reaches S3 via VPCe → HTTP **403** (wrong UA) |
+| Virtual-hosted S3 DNS | Fail |
+| Hyperplane | DNS/GW `169.254.100.5` · src `169.254.100.6` · iface `vint_runtime` |
+| Log successes | **0** successful data-plane events in large samples |
+| Doctrine | Stop blind multi-k UA spray; residual is exact Stmt2 UA |
 
 ## Campaign assets
 
