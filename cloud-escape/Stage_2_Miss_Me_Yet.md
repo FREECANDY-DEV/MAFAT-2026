@@ -6,11 +6,13 @@
     <img src="https://img.shields.io/badge/Service-Lambda%20%7C%20S3%20%7C%20IAM-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS Services" />
     <img src="https://img.shields.io/badge/Category-Cloud%20Security%20%7C%20IAM%20Bypass-F79211?style=for-the-badge" alt="Category" />
     <img src="https://img.shields.io/badge/Points-200%20PTS-00C7B7?style=for-the-badge" alt="Points" />
-    <img src="https://img.shields.io/badge/Status-Methodology%20Verified-2EA44F?style=for-the-badge" alt="Status" />
+    <img src="https://img.shields.io/badge/Status-Deep%20Mapped%20%2F%20Flag%20Pending-yellow?style=for-the-badge" alt="Status" />
   </p>
 </div>
 
 ---
+
+> Related: [Deep Enumeration](Stage2_Deep_Enumeration.md) · [AWS Environment Map](Stage2_AWS_Environment.md)
 
 ## 🎯 Executive Summary & Challenge Profile
 

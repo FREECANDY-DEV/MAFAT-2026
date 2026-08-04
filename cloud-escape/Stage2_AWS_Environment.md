@@ -1,3 +1,19 @@
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=34&duration=2500&pause=900&color=00C7B7&center=true&vCenter=true&width=860&height=85&lines=AWS+Environment+Map;ctf_participant_role+Surface;Allow+%C2%B7+Deny+%C2%B7+Foothold" alt="Typing SVG" />
+
+  <p>
+    <img src="https://img.shields.io/badge/ALLOW-5+probes-2EA44F?style=for-the-badge" alt="allow" />
+    <img src="https://img.shields.io/badge/DENY-130%2B+probes-red?style=for-the-badge" alt="deny" />
+    <img src="https://img.shields.io/badge/Principal-ctf_participant_role-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="role" />
+  </p>
+</div>
+
+---
+
+> [!IMPORTANT]
+> This principal is **intentionally minimal**. Real foothold = **log bucket object read** + **SigV4 code_exec**.  
+> Everything else in this account (IAM, EC2, Lambda list, CF control plane, Stage1 buckets) is **denied**.
+
 # AWS environment enumeration
 Generated (UTC): 2026-08-04T08:13:12.155897+00:00
 
