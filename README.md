@@ -94,8 +94,10 @@ graph TD
 ## 📂 Documentation Directory & Writeups
 
 - 🛡️ **[Writeups index](cloud-escape/README.md)** · **[Combined summary](cloud-escape/WRITEUP.md)**
-- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Single detailed writeup — Git forensics, OIDC wildcard, `nslookupv2` injection, Route 53 DNS exfil (`1a1jelrlfg2yi2s0`).
-- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Single detailed writeup — CloudFront `/docs.html` policy, code_exec sandbox, UA/VPC conditions, log forensics, versioning, oracles.
+- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Full writeup — Git forensics, OIDC wildcard, `nslookupv2` injection, Route 53 DNS exfil (`1a1jelrlfg2yi2s0`).
+- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Methodology writeup — code_exec, dual-statement S3 policy, path-style VPCe, deny taxonomy.
+- 🧪 **[Stage 2 Deep Enumeration](cloud-escape/Stage2_Deep_Enumeration.md)**: Secrets/hints board, CF content, log UA/principal/key intel, runtime probes.
+- 🗺️ **[Stage 2 AWS Environment Map](cloud-escape/Stage2_AWS_Environment.md)**: Full allow/deny surface as `ctf_participant_role`.
 
 ---
 
