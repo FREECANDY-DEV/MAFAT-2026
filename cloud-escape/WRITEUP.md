@@ -5,22 +5,28 @@
 ---
 
 ## 🚩 Stage 1: Have Some Faith
+
 **Flag:** `1a1jelrlfg2yi2s0`
 
 Stage 1 focused on gaining an initial foothold into the target AWS environment and pivoting to extract data from an isolated VPC.
-- **Initial Foothold:** Identified a critical misconfiguration in a GitHub OIDC trust policy (`repo:*/*`), allowing us to assume the highly privileged `cicdRole`.
-- **Enumeration:** Revealed an API Gateway endpoint backed by a vulnerable Lambda function (`nslookupv2`).
-- **Exploitation & Exfiltration:** The Lambda was vulnerable to command injection via the `domain` parameter. However, the VPC lacked outbound internet access. To exfiltrate the S3-hosted flag, we abused the built-in AWS Route 53 VPC Resolver to forward DNS queries containing the hex-encoded flag to our controlled DNS server.
+
+- **Initial foothold:** Misconfigured GitHub OIDC trust policy (`repo:*/*` on branch `corgi`) → assume `cicdRole` in account `009661764077`.
+- **Enumeration:** S3 buckets, Lambdas (`nslookupv2`, `code_exec`), CloudFront, API Gateway.
+- **Exploitation & exfiltration:** Command injection in `/dev/nslookupv2` (`shell=True` + unsanitized `domain`). No VPC internet egress — flag hex-exfiltrated via Route 53 VPC DNS resolver (`169.254.169.253`) to an external DNS log.
+
+**Full writeup:** [Stage_1_Have_Some_Faith.md](Stage_1_Have_Some_Faith.md)
 
 ---
 
 ## 🚩 Stage 2: Miss Me Yet?
-**Flag:** `0102013`
 
-Stage 2 elevated the difficulty with strict egress filtering and blind execution contexts.
-- **Discovery:** Found a leaked S3 Bucket Policy inside `/docs.html` on a CloudFront distribution, detailing that access was restricted to requests coming from within the VPC **and** presenting a `User-Agent: Amazon CloudFront` header.
-- **Exploitation:** Leveraged an arbitrary code execution Lambda (`/dev/code_exec`). We injected a `boto3` event hook to spoof the `User-Agent` header, successfully bypassing the IAM policy.
-- **Exfiltration:** Because the Lambda returned no standard output, we engineered a Blind Timing Side-Channel. By injecting conditional `time.sleep()` statements based on character matches, we measured the API response latency to successfully extract the flag character by character.
+Stage 2 elevates difficulty with strict egress filtering and a blind code-exec context.
+
+- **Discovery:** CloudFront site + `/docs.html` bucket policy (Statement1: UA; Statement2: SourceVpc + UA). Participant can read `logd8a2f72fe43094e8` audit trail.
+- **Execution:** `/dev/code_exec` runs base64 Python with stdout suppressed; S3 path via VPC endpoint; Boto3/`urllib` User-Agent injection.
+- **Forensics:** CloudTrail principals, deny taxonomy, versioning hypothesis, boolean/timing oracles, UA→log exfil channel.
+
+**Full writeup:** [Stage_2_Miss_Me_Yet.md](Stage_2_Miss_Me_Yet.md)
 
 ---
 

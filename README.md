@@ -93,9 +93,9 @@ graph TD
 
 ## 📂 Documentation Directory & Writeups
 
-- 🛡️ **[Master Challenge Overview](cloud-escape/README.md)**: Combined executive narrative and architectural mapping of both stages.
-- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Complete step-by-step documentation of Git commit forensics, OIDC wildcard trust exploitation, command injection in `/dev/nslookupv2`, and Route 53 DNS exfiltration (`1a1jelrlfg2yi2s0`).
-- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Complete step-by-step documentation of CloudFront `/docs.html` policy discovery, VPC network isolation analysis, Boto3 `User-Agent` header spoofing hooks, S3 Server Access Logs (`logd8a2f72fe43094e8`), and direct S3 versioning/Delete Marker enumeration.
+- 🛡️ **[Writeups index](cloud-escape/README.md)** · **[Combined summary](cloud-escape/WRITEUP.md)**
+- 🟢 **[Stage 1: "Have Some Faith" (100 Points)](cloud-escape/Stage_1_Have_Some_Faith.md)**: Single detailed writeup — Git forensics, OIDC wildcard, `nslookupv2` injection, Route 53 DNS exfil (`1a1jelrlfg2yi2s0`).
+- 🔍 **[Stage 2: "Miss Me Yet?" (200 Points)](cloud-escape/Stage_2_Miss_Me_Yet.md)**: Single detailed writeup — CloudFront `/docs.html` policy, code_exec sandbox, UA/VPC conditions, log forensics, versioning, oracles.
 
 ---
 

@@ -4,8 +4,10 @@ This directory contains the detailed documentation and step-by-step methodologie
 
 ## 📑 Contents
 
-- 📄 **[Stage 1 Deep Dive (WRITEUP_STAGE1.md)](WRITEUP_STAGE1.md)**: Details the OIDC trust policy exploitation, Lambda command injection, and DNS exfiltration strategy.
-- 📄 **[Stage 2 Deep Dive (WRITEUP_STAGE2.md)](WRITEUP_STAGE2.md)**: Details the `aws:UserAgent` bypass via `boto3` header injection and the timing side-channel oracle.
-- 📄 **[Combined Overview (WRITEUP.md)](WRITEUP.md)**: A high-level combined summary of both stages.
+| Document | Description |
+|---|---|
+| **[Stage_1_Have_Some_Faith.md](Stage_1_Have_Some_Faith.md)** | Full Stage 1 writeup — OIDC wildcard, Lambda command injection, DNS exfiltration |
+| **[Stage_2_Miss_Me_Yet.md](Stage_2_Miss_Me_Yet.md)** | Full Stage 2 writeup — code_exec, UA/VPC policy, logs, versioning, oracles |
+| **[WRITEUP.md](WRITEUP.md)** | High-level combined summary of both stages |
 
 *Write-up by Agent freecandy — Cloud Escape CTF 2026*

