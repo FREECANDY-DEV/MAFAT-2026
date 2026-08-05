@@ -414,6 +414,7 @@ flowchart LR
         I2["2. Lambda concatenates: /opt/nslookup + user_domain"]
         I3["3. subprocess.run executes with shell=True"]
         I4["4. Shell metacharacter ';' triggers arbitrary command execution"]
+        I1 --> I2 --> I3 --> I4
     end
 ```
 
