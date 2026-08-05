@@ -47,7 +47,7 @@ Detailed step-by-step content lives in the per-stage files linked below.
 |:---|:---|
 | **Flag** | `1a1jelrlfg2yi2s0` |
 | **Points** | 100 |
-| **Doc** | [Stage_1_Have_Some_Faith.md](Stage_1_Have_Some_Faith.md) |
+| **Doc** | [Stage_1_Comprehensive_Writeup.md](Stage_1_Comprehensive_Writeup.md) |
 | **Account** | `009661764077` |
 
 ### Chain
@@ -161,7 +161,7 @@ ONCE KNOWN:
 
 | Document | Role |
 |:---|:---|
-| [Stage_1_Have_Some_Faith.md](Stage_1_Have_Some_Faith.md) | Stage 1 full solve |
+| [Stage_1_Comprehensive_Writeup.md](Stage_1_Comprehensive_Writeup.md) | Stage 1 full solve |
 | [Stage_2_Miss_Me_Yet.md](Stage_2_Miss_Me_Yet.md) | Stage 2 methodology |
 | [Stage2_Technical_Report.md](Stage2_Technical_Report.md) | Full technical consolidation |
 | [Stage2_Deep_Enumeration.md](Stage2_Deep_Enumeration.md) | Enumeration detail |
