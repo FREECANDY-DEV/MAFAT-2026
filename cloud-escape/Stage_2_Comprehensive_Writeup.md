@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=36&duration=2500&pause=900&color=F79211&center=true&vCenter=true&width=860&height=90&lines=Stage+2+Writeup;Comprehensive+Report;Miss+Me+Yet%3F" alt="Stage 2" />
@@ -552,7 +554,7 @@ Authorized Cloud Escape CTF lab only. No production systems. No invented flags.
 ### 14. Latest Additions (Final Recon)
 
 1. **Local environment networking**: Attempts to reach port 2000 (X-Ray daemon) at 169.254.100.1 and other local network meta-services from the Lambda resulted in Connection refused. The execution environment is completely isolated from all local metadata endpoints (no IAM role credential exfiltration via 169.254.170.2 or 169.254.169.254).
-2. **Internal Credential tests**: Attempting to use the ctf_participant_role credentials directly *inside* the Lambda environment using oto3 to perform s3:ListBucket or s3:GetObject still returns AccessDenied due to the resource-based policy conditions (Statement2) not being met by the AWS Python SDK's default User-Agent.
+2. **Internal Credential tests**: Attempting to use the ctf_participant_role credentials directly *inside* the Lambda environment using oto3 to perform s3:ListBucket or s3:GetObject still returns AccessDenied due to the resource-based policy conditions (Statement2) not being met by the AWS Python SDK's default User-Agent.
 3. **Session Expiry**: The ctf_participant_role credentials expire every 1 hour, requiring fresh credentials from the challenges platform to continue executing scripts via the API Gateway.
 
 
@@ -1303,3 +1305,18 @@ Agent freecandy · generated from live participant probes
 
 </div>
 
+
+## 🚨 NEW INTELLIGENCE: Corgi Branch Workflow
+
+Upon analyzing the `corgi` branch of the `MAFAT-2026` repository, we discovered the `stage2.yml` GitHub Actions workflow. This workflow provides crucial intelligence for Stage 2:
+
+1. **The Attack Path is Confirmed**: The workflow automates the exact attack path we theorized: making path-style `UNSIGNED` requests to S3 from inside the Lambda VPC using `urllib.request`.
+2. **The Oracle Logic**: The workflow implements a boolean blind exfiltration oracle (comparing `Code executed successfully` vs `Something went wrong!`) to leak the flag byte-by-byte once the correct `User-Agent` is found.
+3. **The Target UAs**: The workflow tests a specific batch of User-Agents for Statement2 condition matching. The list includes:
+   - `Amazon CloudFront`, `CloudFront`, `AmazonS3`, `aws-internal/3`
+   - `junior_developer`, `Miss Me Yet?`, `Miss Me Yet`, `???`, `Test Site`, `System Documentation`
+   - `This is me`, `pretty sure I deleted it all`, `I had a lot of fun doing it!`
+   - `REDACTED`, `bucket_policy.json`, `really fixed bugs this time`, `super secret project`, `I am a junior developer`
+   - `Code executed successfully`, `Something went wrong!`, `""`
+
+This confirms that the `User-Agent` is likely one of the strings listed above (or a variation of them), and the flag can be extracted using the boolean oracle logic demonstrated in the workflow.
