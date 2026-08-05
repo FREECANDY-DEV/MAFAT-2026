@@ -343,3 +343,9 @@ Authorized Cloud Escape CTF lab only. No production systems. No invented flags.
 **Agent freecandy · Cloud Escape CTF 2026 · Stage 2 Technical Report**
 
 </div>
+
+### 14. Latest Additions (Final Recon)
+
+1. **Local environment networking**: Attempts to reach port 2000 (X-Ray daemon) at 169.254.100.1 and other local network meta-services from the Lambda resulted in Connection refused. The execution environment is completely isolated from all local metadata endpoints (no IAM role credential exfiltration via 169.254.170.2 or 169.254.169.254).
+2. **Internal Credential tests**: Attempting to use the ctf_participant_role credentials directly *inside* the Lambda environment using oto3 to perform s3:ListBucket or s3:GetObject still returns AccessDenied due to the resource-based policy conditions (Statement2) not being met by the AWS Python SDK's default User-Agent.
+3. **Session Expiry**: The ctf_participant_role credentials expire every 1 hour, requiring fresh credentials from the challenges platform to continue executing scripts via the API Gateway.

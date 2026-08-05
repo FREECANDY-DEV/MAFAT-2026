@@ -177,3 +177,9 @@ Authorized CTF only. Do not apply these techniques to systems outside the challe
 <div align="center">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=15&duration=3000&pause=1000&color=00C7B7&center=true&vCenter=true&width=640&height=35&lines=Agent+freecandy+%C2%B7+Cloud+Escape+CTF+2026" alt="footer" />
 </div>
+
+### 8. Latest Reconnaissance Additions
+
+- The execution environment is an S3-only prison: IMDS, X-Ray (169.254.100.1:2000), and STS endpoints are entirely inaccessible.
+- Using boto3 *inside* the Lambda payload with ctf_participant_role credentials still yields an AccessDenied on S3 resources, because the boto3 User-Agent does not match the StringEquals requirement in Statement 2 of the bucket policy.
+- Without the exact undocumented ws:UserAgent string for Statement 2, all known exfiltration paths remain blocked.
