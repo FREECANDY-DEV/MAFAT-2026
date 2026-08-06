@@ -142,7 +142,6 @@ flowchart TB
 ```text
 MAFAT-2026/ (branch: corgi)
 ├── README.md                            ← Main Campaign Intelligence Hub
-├── stage2_corgi.yml                      ← CI/CD Automation Workflow
 ├── .github/workflows/
 │   ├── stage1.yml                       ← Stage 1 OIDC & DNS Exfil Pipeline
 │   └── stage2.yml                       ← Stage 2 SigV4 & Lambda Probe Pipeline
@@ -150,8 +149,7 @@ MAFAT-2026/ (branch: corgi)
     ├── README.md                        ← Documentation Index Hub
     ├── WRITEUP.md                       ← Executive Campaign Summary
     ├── Stage_1_Comprehensive_Writeup.md ← Full Stage 1 Solve Report
-    ├── Stage_2_Comprehensive_Writeup.md ← Canonical 800+ Line Stage 2 Solve Narrative & Diagrams
-    └── get_flag_auto.py                 ← Automated Stage 2 Flag Extraction Script
+    └── Stage_2_Comprehensive_Writeup.md ← Canonical 800+ Line Stage 2 Solve Narrative & Diagrams
 ```
 
 ---
