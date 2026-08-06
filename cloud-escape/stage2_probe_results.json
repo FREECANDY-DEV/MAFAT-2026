@@ -1,0 +1,12 @@
+{
+  "taxonomy": {
+    "smoke_pass": true,
+    "smoke_fail": false,
+    "unsigned_any_hit": false
+  },
+  "unsigned_hits": [],
+  "flag": null,
+  "notes": [
+    "No UA hit in candidate dictionary; residual is Statement2 User-Agent"
+  ]
+}
