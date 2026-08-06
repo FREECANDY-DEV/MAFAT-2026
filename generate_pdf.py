@@ -115,12 +115,12 @@ html_template = f"""
         
         .cover-container {{
             text-align: center;
-            padding-top: 220pt;
+            padding-top: 80pt;
         }}
         .cover-title {{ font-size: 48pt; font-weight: bold; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0; padding-bottom: 0; }}
-        .cover-subtitle {{ font-size: 26pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; margin-top: 15pt; border-bottom: 2px solid #00ffff; padding-bottom: 15pt; }}
-        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 40pt; line-height: 1.5; font-style: italic; }}
-        .cover-author {{ font-size: 20pt; color: #ffffff; margin-top: 80pt; font-weight: bold; background-color: #111111; padding: 15px; border: 1px solid #3498db; }}
+        .cover-subtitle {{ font-size: 26pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; margin-top: 5pt; border-bottom: 2px solid #00ffff; padding-bottom: 10pt; }}
+        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 20pt; line-height: 1.5; font-style: italic; }}
+        .cover-author {{ font-size: 20pt; color: #ffffff; margin-top: 30pt; font-weight: bold; background-color: #111111; padding: 15px; border: 1px solid #3498db; }}
         
     </style>
 </head>
