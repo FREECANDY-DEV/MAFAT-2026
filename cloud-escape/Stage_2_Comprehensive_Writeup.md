@@ -659,28 +659,27 @@ flowchart TD
 
 ```mermaid
 gantt
-    title Operation CloudEscape Stage 2 - Timeline (17.5 Hours)
-    dateFormat  YYYY-MM-DD HH:mm
-    axisFormat  %H:%M
+    title Stage 2 Execution Timeline
+    dateFormat YYYY-MM-DD HH:mm
     
-    section Reconnaissance
+    section Recon
     CloudFront Mapping       :a1, 2026-08-05 08:00, 1h
-    Steganography Attempts   :a2, after a1, 2h
+    Steganography            :a2, after a1, 2h
     
-    section Env Mapping
-    Build Boolean Oracle     :a3, 2026-08-05 11:00, 1.5h
-    Binary Search Exfil      :a4, after a3, 2.5h
+    section Env Map
+    Boolean Oracle           :a3, 2026-08-05 11:00, 2h
+    Binary Search Exfil      :a4, after a3, 2h
     
-    section S3 & UA Hunt
-    Construct Timing Oracle  :a5, 2026-08-05 15:00, 2h
-    CloudTrail OOB Exfil     :a6, after a5, 2h
-    User-Agent Brute Force   :a7, after a6, 4h
+    section UA Hunt
+    Timing Oracle            :a5, 2026-08-05 15:00, 2h
+    OOB Exfil                :a6, after a5, 2h
+    UA Brute Force           :a7, after a6, 4h
     
     section Breakthrough
-    Test Alternative Paths   :a8, 2026-08-05 23:00, 3h
-    Notice _ad_json Error    :milestone, m1, 2026-08-06 02:00, 0m
-    Global Namespace Patch   :a9, 2026-08-06 02:00, 1h
-    Flag Capture             :milestone, m2, 2026-08-06 03:00, 0m
+    Alternative Paths        :a8, 2026-08-05 23:00, 3h
+    Notice Glitch            :milestone, m1, 2026-08-06 02:00, 0h
+    Namespace Patch          :a9, 2026-08-06 02:00, 1h
+    Flag Capture             :milestone, m2, 2026-08-06 03:00, 0h
 ```
 
 ---
