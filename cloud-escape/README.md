@@ -25,32 +25,12 @@
 
 ## Stage documents
 
-<table>
-  <tr>
-    <td width="50%" valign="top">
-
-### Stage 1 — Have Some Faith
-**100 PTS** · Flag **captured**
-
-| Link | Content |
-|:---|:---|
-| [Full writeup](Stage_1_Comprehensive_Writeup.md) | OIDC · injection · DNS exfil |
-| **Flag** | `1a1jelrlfg2yi2s0` |
-
-    </td>
-    <td width="50%" valign="top">
-
-### Stage 2 — Miss Me Yet?
-**200 PTS** · Flag **captured**
-
-| Link | Content |
-|:---|:---|
-| [Full writeup](Stage_2_Comprehensive_Writeup.md) | Attack methodology & wrapper patch |
-| **Flag** | `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
-
-    </td>
-  </tr>
-</table>
+| Stage 1 — Have Some Faith | Stage 2 — Miss Me Yet? |
+| :--- | :--- |
+| **100 PTS** · Flag **captured** | **200 PTS** · Flag **captured** |
+| 📖 **[Full writeup](Stage_1_Comprehensive_Writeup.md)** | 📘 **[Full writeup](Stage_2_Comprehensive_Writeup.md)** |
+| *OIDC · injection · DNS exfil* | *Attack methodology & wrapper patch* |
+| **Flag:** `1a1jelrlfg2yi2s0` | **Flag:** `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
 
 ---
 
