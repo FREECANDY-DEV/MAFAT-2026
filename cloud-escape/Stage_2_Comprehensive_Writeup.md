@@ -18,21 +18,22 @@ Welcome to the definitive, deeply technical writeup for Stage 2 of the MAFAT Clo
 <summary><h2>📑 Table of Contents (Click to Expand)</h2></summary>
 
 1. [Executive Summary](#executive-summary)
-2. [Challenge Briefing & Architecture](#challenge-briefing)
-3. [Phase 1: CloudFront Reconnaissance](#phase-1-cloudfront-reconnaissance)
-4. [Phase 2: Identity and Surface Mapping](#phase-2-identity-and-surface-mapping)
-5. [Phase 3: Lambda Environment Mapping (Blind Execution)](#phase-3-lambda-environment-mapping)
-6. [Phase 4: S3 Access Taxonomy](#phase-4-s3-access-taxonomy)
-7. [Phase 5: The User-Agent Hunt](#phase-5-the-user-agent-hunt)
-8. [Phase 6: Alternative Approaches (Dead Ends)](#phase-6-alternative-approaches)
-9. [Phase 7: The Breakthrough — Wrapper Mutation](#phase-7-the-breakthrough)
-10. [Phase 8: Flag Capture and Submission](#phase-8-flag-capture)
-11. [Key Scripts and Tools](#key-scripts-and-tools)
-12. [Wrapper Analysis](#wrapper-analysis)
-13. [Remediation & AWS Hardening](#remediation--aws-hardening)
-14. [Lessons Learned](#lessons-learned)
-15. [Timeline](#timeline)
-16. [Appendix: Full Asset Map](#appendix-full-asset-map)
+2. [Flag Recovery Mechanism: Obstacles, Interruptions & Solve](#-flag-recovery-mechanism-obstacles-interruptions--solve)
+3. [Challenge Briefing & Architecture](#challenge-briefing)
+4. [Phase 1: CloudFront Reconnaissance](#phase-1-cloudfront-reconnaissance)
+5. [Phase 2: Identity and Surface Mapping](#phase-2-identity-and-surface-mapping)
+6. [Phase 3: Lambda Environment Mapping (Blind Execution)](#phase-3-lambda-environment-mapping)
+7. [Phase 4: S3 Access Taxonomy](#phase-4-s3-access-taxonomy)
+8. [Phase 5: The User-Agent Hunt](#phase-5-the-user-agent-hunt)
+9. [Phase 6: Alternative Approaches (Dead Ends)](#phase-6-alternative-approaches)
+10. [Phase 7: The Breakthrough — Wrapper Mutation](#phase-7-the-breakthrough)
+11. [Phase 8: Flag Capture and Submission](#phase-8-flag-capture)
+12. [Key Scripts and Tools](#key-scripts-and-tools)
+13. [Wrapper Analysis](#wrapper-analysis)
+14. [Remediation & AWS Hardening](#remediation--aws-hardening)
+15. [Lessons Learned](#lessons-learned)
+16. [Timeline](#timeline)
+17. [Appendix: Full Asset Map](#appendix-full-asset-map)
 
 </details>
 
@@ -43,6 +44,40 @@ Welcome to the definitive, deeply technical writeup for Stage 2 of the MAFAT Clo
 Stage 2 ("Miss Me Yet?", 200 pts) presented a heavily locked-down AWS environment featuring a blind Remote Code Execution (RCE) vulnerability inside an isolated AWS Lambda function. The objective was to read a `flag.txt` file from an S3 bucket protected by a strict bucket policy enforcing both VPC boundaries and a secret `User-Agent` string. After exhausting traditional enumeration, building boolean/timing oracles, testing thousands of candidate User-Agents, and performing out-of-band exfiltration via CloudTrail, the solution ultimately relied on observing a live infrastructure bug. By weaponizing a missing global variable (`_ad_json`) inside a hidden wrapper function (`_advanced_dispatcher`), we successfully patched the execution environment from within, forcing the challenge infrastructure to reveal the flag embedded in a hidden diagnostic JSON object (`ctf_out.f_value`).
 
 **Captured Flag:** `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c`
+
+---
+
+## 💡 FLAG RECOVERY MECHANISM: OBSTACLES, INTERRUPTIONS & SOLVE
+
+### 1. What Was Blocking / Interrupting Us?
+
+* **The Intended S3 Policy Gate (403 Forbidden)**: `docs.html` leaked an S3 bucket policy requiring both `aws:SourceVpc` (satisfied by executing inside the Lambda VPC) AND a secret `aws:UserAgent` (REDACTED). Over 2,500 candidate User-Agents were fuzzed (including challenge titles, developer names, portal text, AWS CLI strings, and Stage 1 clues)—all returned `403 Access Denied`.
+* **Blind RCE Sandbox (Zero Output)**: The API Gateway endpoint (`/dev/code_exec`) stripped all `stdout` and `stderr`. Responses were strictly masked to boolean states (`{"result":"Code executed successfully"}` or `{"error":"Something went wrong!"}`).
+* **Server-Side Wrapper Interruption (`NameError`)**: During testing, the CTF organizers updated the Lambda function live, introducing a wrapper (`_advanced_dispatcher`). However, the wrapper contained an unhandled bug: `NameError: name '_ad_json' is not defined`. This caused all executions to crash with stack traces, temporarily interrupting normal execution.
+
+### 2. How We Managed to Overcome the Interruption
+
+Because our code was executed via `exec()` inside the same Python process and namespace as the Lambda handler, we possessed write access to the global scope:
+
+* **Global Scope Patching**: In our Base64 Python payload, we declared `global _ad_json; _ad_json = json`.
+* **Environment Repair**: Defining `_ad_json` in the global scope fixed the server-side wrapper's missing dependency dynamically at runtime, allowing `_advanced_dispatcher` to complete its execution loop without crashing.
+
+### 3. How We Actually Got the Flag
+
+* **Wrapper Execution**: Once repaired, `_advanced_dispatcher` completed its internal routine, which performed server-side health checks and retrieved the flag value internally.
+* **`ctf_out` Extraction**: The repaired wrapper appended a diagnostic JSON object to the HTTP response:
+  ```json
+  {
+    "result": "Code executed successfully",
+    "ctf_out": {
+      "c_status": 200,
+      "c_md5": "5aa66d248cc567648a1c4ce802bb1754",
+      "f_status": 200,
+      "f_value": "24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c"
+    }
+  }
+  ```
+* **Full Body Parsing**: Reading the entire raw HTTP response JSON instead of relying on string matching (`if "Code executed successfully"`) allowed us to extract `ctf_out.f_value`—the accepted 64-character SHA-256 flag hash.
 
 ---
 
