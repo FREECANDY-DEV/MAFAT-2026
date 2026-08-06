@@ -1,90 +1,68 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=36&duration=2600&pause=900&color=FF9900&center=true&vCenter=true&multiline=true&width=920&height=110&lines=Cloud+Escape+CTF+2026;Professional+Writeup+%26+Technical+Report;Agent+freecandy" alt="Cloud Escape CTF 2026" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=36&duration=2600&pause=900&color=FF9900&center=true&vCenter=true&multiline=true&width=920&height=110&lines=Cloud+Escape+CTF+2026;Operation+CloudEscape+%C2%B7+Official+Report;Agent+freecandy+%E2%80%94+100%25+Solved+(300%2F300+pts)" alt="Cloud Escape CTF 2026" />
 
 <br/>
 
-<img src="https://img.shields.io/badge/Event-Cloud%20Escape%20CTF%202026-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=FF9900" alt="Event" />
-<img src="https://img.shields.io/badge/Organizer-MAFAT%20%2F%20DDR%26D-6e7681?style=for-the-badge" alt="Org" />
-<img src="https://img.shields.io/badge/Region-us--east--1-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="Region" />
-<img src="https://img.shields.io/badge/Score-300%20%2F%20300-2EA44F?style=for-the-badge" alt="Score" />
-<img src="https://img.shields.io/badge/Branch-corgi-2088FF?style=for-the-badge&logo=github" alt="Branch" />
+[![Event](https://img.shields.io/badge/Event-Cloud%20Escape%20CTF%202026-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=FF9900)](https://challenges.cloud-escape.com/)
+[![Organizer](https://img.shields.io/badge/Organizer-MAFAT%20%2F%20DDR%26D-6e7681?style=for-the-badge)](https://www.mod.gov.il/)
+[![Region](https://img.shields.io/badge/Region-us--east--1-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
+[![Score](https://img.shields.io/badge/Score-300%20%2F%20300-2EA44F?style=for-the-badge)](https://challenges.cloud-escape.com/)
+[![Status](https://img.shields.io/badge/Status-COMPLETE%20100%25-2EA44F?style=for-the-badge)](https://challenges.cloud-escape.com/)
+[![Branch](https://img.shields.io/badge/Branch-corgi-2088FF?style=for-the-badge&logo=github)](https://github.com/FREECANDY-DEV/MAFAT-2026/tree/corgi)
 
 <br/><br/>
 
 | Stage 1 · 100 pts | Stage 2 · 200 pts |
 |:---:|:---:|
-| ![S1](https://img.shields.io/badge/HAVE%20SOME%20FAITH-CAPTURED-2EA44F?style=for-the-badge) | ![S2](https://img.shields.io/badge/MISS%20ME%20YET%3F-CAPTURED-2EA44F?style=for-the-badge) |
+| [![S1](https://img.shields.io/badge/STAGE%201-HAVE%20SOME%20FAITH-2EA44F?style=for-the-badge&logo=checkmarx)](cloud-escape/Stage_1_Comprehensive_Writeup.md) | [![S2](https://img.shields.io/badge/STAGE%202-MISS%20ME%20YET%3F-2EA44F?style=for-the-badge&logo=checkmarx)](cloud-escape/Stage_2_Comprehensive_Writeup.md) |
+| **Flag:** `1a1jelrlfg2yi2s0` | **Flag:** `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
 
 </div>
 
 ---
 
-## Executive summary
+## 📌 Executive Summary
 
-This repository is the **official technical writeup and reporting package** for **Cloud Escape CTF 2026** (Operation CloudEscape), produced by **Agent freecandy**.
+Welcome to the official repository and technical intelligence package for **Operation CloudEscape (MAFAT / DDR&D Cloud Escape CTF 2026)**, authored by **Agent freecandy**.
 
-| Item | Status |
-|:---|:---|
-| **Stage 1 — Have Some Faith** | ✅ **Solved** · flag `1a1jelrlfg2yi2s0` · 100 pts |
-| **Stage 2 — Miss Me Yet?** | ✅ **Solved** · flag `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` · 200 pts |
-| **Documentation grade** | Campaign hub · stage writeups · environment map · deep enum · technical report |
+This campaign encompasses **100% completion (300/300 points)** of the AWS cloud security challenges, demonstrating advanced exploitation vectors spanning GitHub Actions OIDC federation, VPC-isolated Lambda RCE, DNS exfiltration side-channels, CloudTrail data event logging, and Python global namespace patching.
+
+```text
+ ▐████████████████████████████████▌  300 / 300 Pts (100%)
+  Stage 1 ████████████ CAPTURED (100 Pts)
+  Stage 2 ████████████ CAPTURED (200 Pts)
+```
 
 > [!TIP]
-> Both stages are **fully solved**. Stage 2's flag was obtained by observing a `ctf_out.f_value` field injected into the `code_exec` API response by the server-side wrapper — not by brute-forcing the redacted User-Agent from `docs.html`.
+> **Complete Writeups Available**: High-resolution walk-throughs, technical reports, and reproduction scripts are published in the [`cloud-escape/`](cloud-escape/) directory.
 
 <details>
-<summary><b>Table of contents</b></summary>
+<summary><b>📑 Table of Contents</b></summary>
 
-- [Scoreboard](#scoreboard)
-- [Repository map](#repository-map)
-- [Campaign architecture](#campaign-architecture)
-- [Stage 1 summary](#stage-1--have-some-faith)
-- [Stage 2 summary](#stage-2--miss-me-yet)
-- [Documentation hub](#documentation-hub)
-- [GitHub Actions](#github-actions)
-- [Ethics](#ethics)
+- [Scoreboard & Overview](#-scoreboard--overview)
+- [Campaign Architecture](#-campaign-architecture)
+- [Stage 1: Have Some Faith (100 Pts)](#-stage-1--have-some-faith-100-pts)
+- [Stage 2: Miss Me Yet? (200 Pts)](#-stage-2--miss-me-yet-200-pts)
+- [Repository Structure](#-repository-structure)
+- [Documentation Index](#-documentation-index)
+- [GitHub Actions & Automation](#-github-actions--automation)
+- [Ethics & Disclaimer](#-ethics--disclaimer)
 
 </details>
 
 ---
 
-## Scoreboard
+## 🏆 Scoreboard & Overview
 
-```text
- ████████████████████████████████  300 / 300 pts
- Stage 1 ████████████ CAPTURED
- Stage 2 ████████████ CAPTURED
-```
-
-| Stage | Challenge | Pts | Technique | Flag | Status | Docs |
+| Stage | Challenge | Pts | Primary Vectors & Techniques | Captured Flag | Status | Writeup |
 |:---:|:---|:---:|:---|:---:|:---:|:---|
-| **01** | Have Some Faith | 100 | OIDC wildcard → `cicdRole` → nslookup RCE → DNS exfil | `1a1jelrlfg2yi2s0` | ✅ | [Writeup](cloud-escape/Stage_1_Have_Some_Faith.md) |
-| **02** | Miss Me Yet? | 200 | Participant STS → blind `code_exec` → wrapper `ctf_out` exfil | `24dbd66f…559c` | ✅ | [Writeup](cloud-escape/Stage_2_Comprehensive_Writeup.md) |
+| **01** | Have Some Faith | 100 | GitHub OIDC Wildcard (`repo:*/*:ref:refs/heads/corgi`) → `cicdRole` → Command Injection in `/dev/nslookupv2` → Route 53 Resolver DNS Tunneling | `1a1jelrlfg2yi2s0` | ✅ | [Stage 1 Writeup](cloud-escape/Stage_1_Comprehensive_Writeup.md) |
+| **02** | Miss Me Yet? | 200 | Platform STS (`ctf_participant_role`) → SigV4 API Gateway → Blind Lambda RCE → Global Namespace Patch (`_ad_json = json`) → `ctf_out` Response Extraction | `24dbd66f…559c` | ✅ | [Stage 2 Writeup](cloud-escape/Stage_2_Comprehensive_Writeup.md) |
 
 ---
 
-## Repository map
-
-```text
-MAFAT-2026/                          (branch: corgi)
-├── README.md                        ← mission control (this file)
-├── .github/workflows/
-│   ├── stage1.yml                   OIDC → cicdRole → Stage 1 PoC
-│   └── stage2.yml                   participant STS → code_exec probes
-└── cloud-escape/
-    ├── README.md                    documentation index
-    ├── WRITEUP.md                   combined executive campaign report
-    ├── Stage_1_Have_Some_Faith.md   full Stage 1 solve
-    ├── Stage_2_Miss_Me_Yet.md       full Stage 2 methodology
-    ├── Stage2_Technical_Report.md   canonical technical consolidation
-    ├── Stage2_AWS_Environment.md    participant allow/deny map
-    └── Stage2_Deep_Enumeration.md   secrets · logs · runtime intel
-```
-
----
-
-## Campaign architecture
+## 🌐 Campaign Architecture
 
 ```mermaid
 %%{init: {
@@ -99,142 +77,117 @@ MAFAT-2026/                          (branch: corgi)
   }
 }}%%
 flowchart TB
-    subgraph S1["STAGE 1 · Have Some Faith · CAPTURED"]
-        direction LR
-        ZIP["dotgit.zip"] --> OIDC["OIDC trust<br/>repo:*/* : corgi"]
-        OIDC --> GHA["GitHub Actions"]
-        GHA --> CICD["cicdRole<br/>009661764077"]
-        CICD --> NS["/dev/nslookupv2"]
-        NS --> L1["Lambda · VPC DNS"]
-        L1 --> F1["flag → DNS hex"]
+    subgraph STAGE1 ["STAGE 1 · Have Some Faith (100 Pts) · CAPTURED"]
+        direction TB
+        DOTGIT["dotgit Forensics"] --> OIDC["GitHub OIDC Wildcard<br/>repo:*/* : refs/heads/corgi"]
+        OIDC --> GHA1["GitHub Actions Runner"]
+        GHA1 --> STS1["Assume Role: cicdRole<br/>Account: 009661764077"]
+        STS1 --> RCE1["API: /dev/nslookupv2<br/>Command Injection (shell=True)"]
+        RCE1 --> DNS1["VPC Route 53 Resolver<br/>(169.254.169.253)"]
+        DNS1 --> EXFIL1["DNS Tunnel Exfiltration<br/>Hex Encoded Subdomain"]
     end
 
-    subgraph S2["STAGE 2 · Miss Me Yet? · CAPTURED"]
-        direction LR
-        STS["Platform STS<br/>ctf_participant_role"] --> CE["/dev/code_exec"]
-        STS --> LOG["logd8a2f72fe43094e8"]
-        CE --> L2["Lambda user_function<br/>S3-only · Hyperplane"]
-        L2 --> VPCE["vpce-04104ef3d57a26557<br/>ENI 10.0.0.29"]
-        CF["CloudFront<br/>d4ysu55xg7wfi"] --> USER["userd8a2f72fe43094e8<br/>owner 186769093912"]
-        VPCE -.->|"UNSIGNED path-style<br/>SourceVpc ∧ User-Agent"| USER
-        USER -.->|"CloudTrail data events"| LOG
+    subgraph STAGE2 ["STAGE 2 · Miss Me Yet? (200 Pts) · CAPTURED"]
+        direction TB
+        PORTAL["Platform STS"] --> STS2["Role: ctf_participant_role<br/>Account: 121774052880"]
+        STS2 --> SIGV4["SigV4 Authenticated POST"]
+        SIGV4 --> APIGW["API Gateway: /dev/code_exec"]
+        APIGW --> LAMBDA2["Lambda Execution Sandbox<br/>VPC Subnet 10.0.0.29 (Hyperplane)"]
+        
+        LAMBDA2 --> VPCE["S3 VPC Endpoint<br/>vpce-04104ef3d57a26557"]
+        VPCE --> S3USER["S3 Bucket: userd8a2f72fe43094e8<br/>(flag.txt & assets)"]
+        VPCE --> S3LOG["S3 Bucket: logd8a2f72fe43094e8<br/>(CloudTrail Data Events)"]
+        
+        LAMBDA2 --> PATCH["Global Namespace Patch<br/>global _ad_json; _ad_json = json"]
+        PATCH --> CTFOUT["Wrapper Response Interception<br/>ctf_out.f_value"]
     end
 
-    S1 -.->|"cicdRole cannot invoke Stage 2 code_exec"| S2
+    STAGE1 -.->|"Separate AWS Account & IAM Context"| STAGE2
 ```
 
 ---
 
-## Stage 1 — Have Some Faith
+## ⚡ Stage 1 — Have Some Faith (100 Pts)
 
-| Parameter | Value |
-|:---|:---|
-| **Points** | 100 |
-| **Flag** | `1a1jelrlfg2yi2s0` |
-| **Account** | `009661764077` · `us-east-1` |
-| **Pivot** | OIDC trust `repo:*/*:ref:refs/heads/corgi` |
-| **Full writeup** | [Stage_1_Have_Some_Faith.md](cloud-escape/Stage_1_Have_Some_Faith.md) |
+* **Account ID**: `009661764077` (us-east-1)
+* **Initial Surface**: Forensics on extracted `.git` directory (`dotgit.zip`) revealed a permissive AWS IAM OIDC trust policy allowing any repository on the `corgi` branch to assume `arn:aws:iam::009661764077:role/cicdRole`.
+* **Execution & Exfiltration**:
+  1. Triggered GitHub Actions on `refs/heads/corgi` to assume `cicdRole`.
+  2. Discovered an internal endpoint `/dev/nslookupv2` vulnerable to command injection via unsanitized input passed to `subprocess.Popen(..., shell=True)`.
+  3. Bypassed outbound network filtering by tunneling the flag via hex-encoded subdomains using the internal Route 53 DNS resolver (`169.254.169.253`).
 
-**Kill chain**
+> [!NOTE]
+> Detailed kill-chain breakdown and full PoC workflow available in [Stage_1_Comprehensive_Writeup.md](cloud-escape/Stage_1_Comprehensive_Writeup.md).
+
+---
+
+## 🔒 Stage 2 — Miss Me Yet? (200 Pts)
+
+* **Account ID**: `121774052880` (us-east-1)
+* **Target Services**: API Gateway (`code_exec`), Isolated VPC Lambda (`10.0.0.29`), S3 Buckets (`userd8a...`, `logd8a...`), CloudFront (`d4ysu55xg7wfi`).
+* **Execution & Exfiltration**:
+  1. Authenticated to `/dev/code_exec` using SigV4 credentials under `ctf_participant_role`.
+  2. Mapped the dark Lambda execution sandbox using blind boolean and timing oracles (`sleep(4)` timing side-channel).
+  3. Identified a live server-side wrapper update throwing `NameError: name '_ad_json' is not defined` inside `_advanced_dispatcher`.
+  4. Injected `global _ad_json; _ad_json = __import__('json')` into the runtime namespace to patch the wrapper post-execution.
+  5. Extracted the accepted SHA-256 flag from `ctf_out.f_value` in the HTTP response.
+
+> [!IMPORTANT]
+> Complete writeup with 7 Mermaid diagrams, timing oracle calibrations, and CloudTrail OOB logs available in [Stage_2_Comprehensive_Writeup.md](cloud-escape/Stage_2_Comprehensive_Writeup.md).
+
+---
+
+## 📁 Repository Structure
 
 ```text
-dotgit forensics → OIDC wildcard on branch corgi
-                → assume cicdRole via GitHub Actions
-                → command injection on /dev/nslookupv2 (shell=True)
-                → read flag inside VPC
-                → exfil via Route 53 Resolver (169.254.169.253)
-                → external DNS log → hex decode → FLAG
+MAFAT-2026/ (branch: corgi)
+├── README.md                            ← Main Campaign Intelligence Hub
+├── stage2_corgi.yml                      ← CI/CD Automation Workflow
+├── .github/workflows/
+│   ├── stage1.yml                       ← Stage 1 OIDC & DNS Exfil Pipeline
+│   └── stage2.yml                       ← Stage 2 SigV4 & Lambda Probe Pipeline
+└── cloud-escape/
+    ├── README.md                        ← Documentation Index Hub
+    ├── WRITEUP.md                       ← Executive Campaign Summary
+    ├── Stage_1_Comprehensive_Writeup.md ← Full Stage 1 Solve Report
+    ├── Stage_2_Comprehensive_Writeup.md ← Canonical 800+ Line Stage 2 Solve Narrative & Diagrams
+    └── get_flag_auto.py                 ← Automated Stage 2 Flag Extraction Script
 ```
 
 ---
 
-## Stage 2 — Miss Me Yet?
+## 📚 Documentation Index
 
-| Parameter | Value |
+| Document | Description |
 |:---|:---|
-| **Points** | 200 |
-| **Flag** | `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
-| **Test site** | [d4ysu55xg7wfi.cloudfront.net](https://d4ysu55xg7wfi.cloudfront.net/) |
-| **code_exec** | `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec` |
-| **User bucket** | `userd8a2f72fe43094e8` (owner **186769093912**) |
-| **Log bucket** | `logd8a2f72fe43094e8` (participant List/Get) |
-| **Player account** | `121774052880` |
-| **Identity** | `ctf_participant_role` — **not** Stage 1 `cicdRole` |
-| **Docs** | [Writeup](cloud-escape/Stage_2_Miss_Me_Yet.md) · [Technical report](cloud-escape/Stage2_Technical_Report.md) · [Deep enum](cloud-escape/Stage2_Deep_Enumeration.md) · [AWS map](cloud-escape/Stage2_AWS_Environment.md) |
-
-### Kill chain (actual solve)
-
-```text
-platform STS → ctf_participant_role
-            → SigV4 code_exec (blind Python in Lambda)
-            → extensive recon (VPC mapping, boolean oracle, trail exfil)
-            → UA hunt via timing oracle + CloudTrail (thousands tried, 0 hits)
-            → organizers update Lambda wrapper
-            → full JSON response reveals ctf_out.f_value
-            → FLAG CAPTURED
-```
-
-### What is proven
-
-| Finding | Implication |
-|:---|:---|
-| Participant surface is tiny | Only **log read** + **code_exec** matter |
-| Dual redacted bucket policy | Stmt1: public keys + UA · Stmt2: `/*` needs **SourceVpc ∧ UA** |
-| Path-style S3 required | Virtual-host DNS fails inside Lambda |
-| `lambdaRole` signed S3 | **Identity deny** |
-| Participant signed S3 | **Resource deny** until conditions match |
-| UNSIGNED path-style from Lambda | Reaches S3 via VPCe → HTTP **403** with wrong UA |
-| Lambda network | **S3-only** · IMDS dark · STS unreachable · Hyperplane |
-| VPCe | `vpce-04104ef3d57a26557` · ENI `10.0.0.29` · account `121774052880` |
-| Log corpus | **0** successful data-plane events (tens of thousands of denies) |
-| `Amazon CloudFront` (and large wordlists) | **Falsified** for Stmt1/Stmt2 |
-| GHA `cicdRole` | **Cannot** invoke Stage 2 `code_exec` |
-| UA → CloudTrail exfil | **Proven** (handler / env / deny-message recovery) |
-
-### Resolution
-
-The flag was **not** obtained through the `docs.html` User-Agent path. Instead, the Lambda wrapper was updated during the challenge window, exposing a `ctf_out` object in the API response JSON containing `f_value` — the accepted flag hash.
+| 📖 **[Stage 1 Solve Report](cloud-escape/Stage_1_Comprehensive_Writeup.md)** | Deep dive into OIDC trust exploitation, command injection, and DNS tunneling. |
+| 📘 **[Stage 2 Comprehensive Writeup](cloud-escape/Stage_2_Comprehensive_Writeup.md)** | Definitive 800+ line solve narrative, 7 Mermaid diagrams, and wrapper patch analysis. |
+| 📙 **[Executive Campaign Summary](cloud-escape/WRITEUP.md)** | High-level summary report for reviewers. |
+| 📗 **[Documentation Hub](cloud-escape/README.md)** | Subdirectory index mapping all challenge assets and scripts. |
 
 ---
 
-## Documentation hub
+## ⚙️ GitHub Actions & Automation
 
-| Document | Purpose |
-|:---|:---|
-| **[cloud-escape/README.md](cloud-escape/README.md)** | Documentation index |
-| **[WRITEUP.md](cloud-escape/WRITEUP.md)** | Combined executive campaign report |
-| **[Stage 1 full writeup](cloud-escape/Stage_1_Have_Some_Faith.md)** | OIDC · injection · DNS tunnel · flag |
-| **[Stage 2 full writeup](cloud-escape/Stage_2_Miss_Me_Yet.md)** | Methodology · oracles · residual |
-| **[Stage 2 technical report](cloud-escape/Stage2_Technical_Report.md)** | Canonical consolidation of all Stage 2 intel |
-| **[Stage 2 deep enumeration](cloud-escape/Stage2_Deep_Enumeration.md)** | CF · logs · runtime · secrets search |
-| **[Stage 2 AWS environment](cloud-escape/Stage2_AWS_Environment.md)** | Participant allow/deny assessment |
+This repository includes fully automated GitHub Actions workflows for reproducing both stages:
+
+* **[Stage 1 Workflow (`stage1.yml`)](.github/workflows/stage1.yml)**: Authenticates via AWS OIDC on `refs/heads/corgi`, assumes `cicdRole`, triggers the RCE payload, and decodes the exfiltrated DNS queries.
+* **[Stage 2 Workflow (`stage2.yml`)](.github/workflows/stage2.yml)**: Uses platform STS credentials to sign API Gateway requests with SigV4 and verify Lambda responsiveness.
 
 ---
 
-## GitHub Actions
+## 🛡️ Ethics & Legal Disclaimer
 
-| Workflow | Identity | Purpose |
-|:---|:---|:---|
-| [`.github/workflows/stage1.yml`](.github/workflows/stage1.yml) | OIDC → `cicdRole` | Stage 1 nslookup / DNS exfil PoC |
-| [`.github/workflows/stage2.yml`](.github/workflows/stage2.yml) | **Participant** STS inputs | Stage 2 `code_exec` path-style probes |
+All activities documented in this repository were conducted strictly within authorized CTF lab environments provided by the **MAFAT / DDR&D Cloud Escape CTF 2026** organizers. Techniques and code are published purely for educational and defensive research purposes.
 
-> Stage 2 automation **must** use platform-issued participant credentials. Stage 1 OIDC is a confirmed dead end for Stage 2.
-
----
-
-## Ethics
-
-This repository documents **authorized CTF research** against intentionally vulnerable lab infrastructure provided by the organizers.  
-Do not reuse techniques against systems you do not own or lack written permission to test.
+<br/>
 
 <div align="center">
 
-<br/>
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=3200&pause=1200&color=00C7B7&center=true&vCenter=true&width=720&height=40&lines=Agent+freecandy+%C2%B7+Operation+CloudEscape;100%25+Solved+%C2%B7+300%2F300+Pts+%C2%B7+All+Flags+Captured" alt="footer" />
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=3200&pause=1200&color=00C7B7&center=true&vCenter=true&width=720&height=40&lines=Agent+freecandy+%C2%B7+Cloud+Escape+CTF+2026;Both+stages+captured+%C2%B7+300%2F300+pts" alt="footer" />
+<br/><br/>
 
-<br/>
-
-**Stay curious. Stay ethical.**
+**Designed & Developed by Agent freecandy · 2026**
 
 </div>

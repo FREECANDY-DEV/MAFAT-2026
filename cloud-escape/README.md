@@ -5,7 +5,7 @@
 <br/>
 
 <img src="https://img.shields.io/badge/Stage%201-Captured-2EA44F?style=for-the-badge" alt="s1" />
-<img src="https://img.shields.io/badge/Stage%202-Deep+Mapped-yellow?style=for-the-badge" alt="s2" />
+<img src="https://img.shields.io/badge/Stage%202-Captured-2EA44F?style=for-the-badge" alt="s2" />
 <img src="https://img.shields.io/badge/Team-Agent+freecandy-F79211?style=for-the-badge" alt="team" />
 
 </div>
@@ -16,10 +16,10 @@
 
 | Order | Document | Audience |
 |:---:|:---|:---|
-| 1 | [../README.md](../README.md) | Everyone — mission control |
-| 2 | [WRITEUP.md](WRITEUP.md) | Reviewers — short campaign narrative |
-| 3 | Stage writeups below | Operators — full methodology |
-| 4 | Technical report + maps | Deep technical audit |
+| 1 | [../README.md](../README.md) | Everyone — main mission control |
+| 2 | [WRITEUP.md](WRITEUP.md) | Reviewers — executive campaign summary |
+| 3 | [Stage_1_Comprehensive_Writeup.md](Stage_1_Comprehensive_Writeup.md) | Stage 1 — Full OIDC & DNS solve report |
+| 4 | [Stage_2_Comprehensive_Writeup.md](Stage_2_Comprehensive_Writeup.md) | Stage 2 — Full 800+ line solve report & diagrams |
 
 ---
 
@@ -34,22 +34,19 @@
 
 | Link | Content |
 |:---|:---|
-| [Full writeup](Stage_1_Have_Some_Faith.md) | OIDC · injection · DNS exfil |
+| [Full writeup](Stage_1_Comprehensive_Writeup.md) | OIDC · injection · DNS exfil |
 | **Flag** | `1a1jelrlfg2yi2s0` |
 
     </td>
     <td width="50%" valign="top">
 
 ### Stage 2 — Miss Me Yet?
-**200 PTS** · Flag **pending**
+**200 PTS** · Flag **captured**
 
 | Link | Content |
 |:---|:---|
-| [Full writeup](Stage_2_Miss_Me_Yet.md) | Attack methodology |
-| [Technical report](Stage2_Technical_Report.md) | Canonical intel consolidation |
-| [Deep enumeration](Stage2_Deep_Enumeration.md) | CF · logs · runtime |
-| [AWS environment map](Stage2_AWS_Environment.md) | Allow / deny matrix |
-| **Flag** | `[NOT CAPTURED]` |
+| [Full writeup](Stage_2_Comprehensive_Writeup.md) | Attack methodology & wrapper patch |
+| **Flag** | `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
 
     </td>
   </tr>
@@ -73,14 +70,10 @@ flowchart LR
 | Asset | Value |
 |:---|:---|
 | Test site | `https://d4ysu55xg7wfi.cloudfront.net/` |
-| code_exec | `…/dev/code_exec` |
+| code_exec | `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec` |
 | User bucket | `userd8a2f72fe43094e8` (owner `186769093912`) |
 | Log bucket | `logd8a2f72fe43094e8` |
 | S3 VPCe | `vpce-04104ef3d57a26557` · ENI `10.0.0.29` |
-
-> [!WARNING]
-> Do **not** submit `00000000000000000000`.  
-> Stage 2 requires **participant STS**, not Stage 1 `cicdRole` OIDC.
 
 ---
 
@@ -89,7 +82,7 @@ flowchart LR
 | Badge | Meaning |
 |:---|:---|
 | ✅ Captured | Flag recovered and documented |
-| 🟡 Mapped | Surface + policy + network fully understood; flag open |
+| 🟡 Mapped | Surface + policy + network fully understood |
 | 🔴 Closed / denied | Path proven non-viable |
 
 <div align="center">
