@@ -70,13 +70,7 @@ html_template = f"""
         @page {{
             size: A4;
             margin: 0;
-            @frame bg_frame {{
-                -pdf-frame-content: bg_content;
-                left: 0; top: 0; width: 210mm; height: 297mm; z-index: -1;
-            }}
-            @frame content_frame {{
-                left: 0; top: 0; width: 210mm; height: 297mm;
-            }}
+            background-image: url('cloud-escape/assets/cover_bg.jpg');
         }}
         @page regular {{
             size: A4;
@@ -121,8 +115,7 @@ html_template = f"""
         
         .cover-container {{
             text-align: center;
-            padding-top: 300pt;
-            width: 100%;
+            margin-top: 150pt;
         }}
         .cover-title {{ font-size: 44pt; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 6px #000000; margin-bottom: 0; padding-bottom: 0; }}
         .cover-subtitle {{ font-size: 24pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 4px #000000; margin-top: 10pt; border-bottom: 2px solid #00ffff; padding-bottom: 20pt; display: inline-block; }}
@@ -132,10 +125,6 @@ html_template = f"""
     </style>
 </head>
 <body>
-    <div id="bg_content">
-        <img src="cloud-escape/assets/cover_bg.jpg" style="width: 210mm; height: 297mm; margin: 0; padding: 0;" />
-    </div>
-    
     <div class="cover-container">
         <div class="cover-title">MAFAT 2026 CTF</div>
         <div class="cover-subtitle">Operation CloudEscape</div>
