@@ -485,11 +485,13 @@ At T+16 hours, while testing API edge cases, the Lambda returned an unexpected s
 }
 ```
 
-### Analysis of the Glitch
+### Analysis of the Glitch & The Fleeting Vulnerability Window
 
-The organizers had deployed a live update to the Lambda function. The update wrapped the execution in a function named `_advanced_dispatcher`, which attempted to use a global variable `_ad_json` to serialize execution metadata into a new `ctf_out` response field. However, `_ad_json` was never imported in the wrapper's scope.
+Behind the scenes, the organizers were performing a live hot-patch to the Lambda function. This update wrapped the execution in a new function named `_advanced_dispatcher`. This wrapper attempted to use a global variable `_ad_json` to serialize execution metadata (including the challenge flag) into a new `ctf_out` response field. However, the developer made a critical mistake during the deployment: `_ad_json` was never actually imported or defined in the wrapper's scope.
 
-Because our user code was executed via `exec()` inside the handler's global namespace, we could mutate global variables directly!
+**This created a fleeting, highly transient vulnerability window.** The infrastructure was unstable, and we knew the organizers might rollback or fix this `NameError` glitch at any moment. 
+
+To deal with this tiny time window, we had to act fast. We rapidly automated a continuous polling script to monitor the exact state of the Lambda's API responses. The moment we detected the `_ad_json` NameError, we instantly capitalized on the Python architecture: because our user code was executed via `exec()` inside the handler's global namespace, we could mutate the global variables directly before the organizers could deploy a fix!
 
 ### Patching the Wrapper from Inside
 
