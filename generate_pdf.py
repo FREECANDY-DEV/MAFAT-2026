@@ -69,7 +69,13 @@ html_template = f"""
     <style>
         @page {{
             size: A4;
+            margin: 0;
+            background-image: url('cloud-escape/assets/cover_bg.jpg');
+        }}
+        @page regular {{
+            size: A4;
             margin: 1.5cm;
+            background-image: url('cloud-escape/assets/pattern_bg.jpg');
             @frame header_frame {{
                 -pdf-frame-content: header_content;
                 left: 1.5cm; width: 18cm; top: 1cm; height: 1cm;
@@ -107,25 +113,25 @@ html_template = f"""
         
         {pygments_css}
         
-        .cover-title {{ font-size: 34pt; font-weight: bold; color: #2c3e50; text-align: center; margin-top: 200pt; }}
-        .cover-subtitle {{ font-size: 18pt; color: #7f8c8d; text-align: center; margin-top: 20pt; }}
-        .cover-author {{ font-size: 14pt; color: #34495e; text-align: center; margin-top: 80pt; font-weight: bold; }}
+        .cover-title {{ font-size: 38pt; font-weight: bold; color: #ffffff; text-align: center; margin-top: 250pt; text-shadow: 2px 2px 4px #000000; }}
+        .cover-subtitle {{ font-size: 20pt; color: #ecf0f1; text-align: center; margin-top: 20pt; text-shadow: 1px 1px 3px #000000; }}
+        .cover-author {{ font-size: 16pt; color: #bdc3c7; text-align: center; margin-top: 80pt; font-weight: bold; text-shadow: 1px 1px 3px #000000; }}
         
     </style>
 </head>
 <body>
+    <div class="cover-title">MAFAT 2026 CTF</div>
+    <div class="cover-subtitle">Operation CloudEscape - Comprehensive Writeup</div>
+    <div class="cover-author">Stage 1 & Stage 2 Exploitation Guide<br/>Team: FREECANDY-DEV</div>
+    
+    <pdf:nextpage name="regular" />
+
     <div id="header_content" style="text-align: right; font-size: 8pt; color: #95a5a6; border-bottom: 1px solid #ecf0f1; padding-bottom: 3px;">
         MAFAT 2026 CTF | Operation CloudEscape
     </div>
     <div id="footer_content" style="text-align: center; font-size: 9pt; color: #95a5a6; border-top: 1px solid #ecf0f1; padding-top: 5px;">
         Page <pdf:pagenumber> of <pdf:pagecount>
     </div>
-
-    <div class="cover-title">MAFAT 2026 CTF</div>
-    <div class="cover-subtitle">Operation CloudEscape - Comprehensive Writeup</div>
-    <div class="cover-author">Stage 1 & Stage 2 Exploitation Guide<br/>Team: FREECANDY-DEV</div>
-    
-    <pdf:nextpage />
     
     <h1>Table of Contents</h1>
     {md.toc}
