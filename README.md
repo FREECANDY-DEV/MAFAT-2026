@@ -43,7 +43,6 @@ This repository is the **official technical writeup and reporting package** for 
 - [Stage 2 summary](#stage-2--miss-me-yet)
 - [Documentation hub](#documentation-hub)
 - [GitHub Actions](#github-actions)
-- [Hard rules](#hard-rules)
 - [Ethics](#ethics)
 
 </details>
@@ -220,18 +219,6 @@ The flag was **not** obtained through the `docs.html` User-Agent path. Instead, 
 | [`.github/workflows/stage2.yml`](.github/workflows/stage2.yml) | **Participant** STS inputs | Stage 2 `code_exec` path-style probes |
 
 > Stage 2 automation **must** use platform-issued participant credentials. Stage 1 OIDC is a confirmed dead end for Stage 2.
-
----
-
-## Hard rules
-
-| Rule | Why |
-|:---|:---|
-| Never submit `00000000000000000000` | Decoy / timing false positive |
-| Use participant STS for Stage 2 | Only identity that can invoke `code_exec` |
-| Path-style S3 inside Lambda | Virtual-host DNS fails |
-| Treat stdout as majority-masked | Design boolean / log oracles |
-| Do not spray UA dictionaries blindly | Tens of thousands of probes, **0** data-plane successes |
 
 ---
 
