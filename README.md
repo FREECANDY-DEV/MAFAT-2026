@@ -7,14 +7,14 @@
 <img src="https://img.shields.io/badge/Event-Cloud%20Escape%20CTF%202026-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=FF9900" alt="Event" />
 <img src="https://img.shields.io/badge/Organizer-MAFAT%20%2F%20DDR%26D-6e7681?style=for-the-badge" alt="Org" />
 <img src="https://img.shields.io/badge/Region-us--east--1-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="Region" />
-<img src="https://img.shields.io/badge/Score-100%20%2F%20300-2EA44F?style=for-the-badge" alt="Score" />
+<img src="https://img.shields.io/badge/Score-300%20%2F%20300-2EA44F?style=for-the-badge" alt="Score" />
 <img src="https://img.shields.io/badge/Branch-corgi-2088FF?style=for-the-badge&logo=github" alt="Branch" />
 
 <br/><br/>
 
 | Stage 1 · 100 pts | Stage 2 · 200 pts |
 |:---:|:---:|
-| ![S1](https://img.shields.io/badge/HAVE%20SOME%20FAITH-CAPTURED-2EA44F?style=for-the-badge) | ![S2](https://img.shields.io/badge/MISS%20ME%20YET%3F-MAPPED%20%7C%20FLAG%20OPEN-yellow?style=for-the-badge) |
+| ![S1](https://img.shields.io/badge/HAVE%20SOME%20FAITH-CAPTURED-2EA44F?style=for-the-badge) | ![S2](https://img.shields.io/badge/MISS%20ME%20YET%3F-CAPTURED-2EA44F?style=for-the-badge) |
 
 </div>
 
@@ -27,12 +27,11 @@ This repository is the **official technical writeup and reporting package** for 
 | Item | Status |
 |:---|:---|
 | **Stage 1 — Have Some Faith** | ✅ **Solved** · flag `1a1jelrlfg2yi2s0` · 100 pts |
-| **Stage 2 — Miss Me Yet?** | 🟡 **Fully mapped** · flag **not captured** · 200 pts open |
-| **Decoy / invalid Stage 2 answers** | Never submit `00000000000000000000` |
+| **Stage 2 — Miss Me Yet?** | ✅ **Solved** · flag `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` · 200 pts |
 | **Documentation grade** | Campaign hub · stage writeups · environment map · deep enum · technical report |
 
-> [!IMPORTANT]
-> Stage 2 is intentionally incomplete on the flag. All high-confidence attack surface, identity, network, and policy findings are documented so the residual problem is isolated to **one unknown** (exact Statement2 `aws:UserAgent`, and/or an unverifiable `aws:SourceVpc` value).
+> [!TIP]
+> Both stages are **fully solved**. Stage 2's flag was obtained by observing a `ctf_out.f_value` field injected into the `code_exec` API response by the server-side wrapper — not by brute-forcing the redacted User-Agent from `docs.html`.
 
 <details>
 <summary><b>Table of contents</b></summary>
@@ -54,15 +53,15 @@ This repository is the **official technical writeup and reporting package** for 
 ## Scoreboard
 
 ```text
- ████████████████████░░░░░░░░░░░░  100 / 300 pts
+ ████████████████████████████████  300 / 300 pts
  Stage 1 ████████████ CAPTURED
- Stage 2 ░░░░░░░░░░░░ DEEP MAPPED · FLAG PENDING
+ Stage 2 ████████████ CAPTURED
 ```
 
 | Stage | Challenge | Pts | Technique | Flag | Status | Docs |
 |:---:|:---|:---:|:---|:---:|:---:|:---|
 | **01** | Have Some Faith | 100 | OIDC wildcard → `cicdRole` → nslookup RCE → DNS exfil | `1a1jelrlfg2yi2s0` | ✅ | [Writeup](cloud-escape/Stage_1_Have_Some_Faith.md) |
-| **02** | Miss Me Yet? | 200 | Participant STS → blind `code_exec` → S3 VPCe + policy | — | 🟡 | [Writeup](cloud-escape/Stage_2_Miss_Me_Yet.md) · [Technical report](cloud-escape/Stage2_Technical_Report.md) |
+| **02** | Miss Me Yet? | 200 | Participant STS → blind `code_exec` → wrapper `ctf_out` exfil | `24dbd66f…559c` | ✅ | [Writeup](cloud-escape/Stage_2_Comprehensive_Writeup.md) |
 
 ---
 
@@ -155,7 +154,7 @@ dotgit forensics → OIDC wildcard on branch corgi
 | Parameter | Value |
 |:---|:---|
 | **Points** | 200 |
-| **Flag** | `[NOT CAPTURED]` — never submit `000000…` |
+| **Flag** | `24dbd66f5c86fbbb7462d6103296e6882c7a0e4931bb8fc5be01ee653acf559c` |
 | **Test site** | [d4ysu55xg7wfi.cloudfront.net](https://d4ysu55xg7wfi.cloudfront.net/) |
 | **code_exec** | `https://l8ssyaz69f.execute-api.us-east-1.amazonaws.com/dev/code_exec` |
 | **User bucket** | `userd8a2f72fe43094e8` (owner **186769093912**) |
@@ -164,15 +163,16 @@ dotgit forensics → OIDC wildcard on branch corgi
 | **Identity** | `ctf_participant_role` — **not** Stage 1 `cicdRole` |
 | **Docs** | [Writeup](cloud-escape/Stage_2_Miss_Me_Yet.md) · [Technical report](cloud-escape/Stage2_Technical_Report.md) · [Deep enum](cloud-escape/Stage2_Deep_Enumeration.md) · [AWS map](cloud-escape/Stage2_AWS_Environment.md) |
 
-### Designed chain
+### Kill chain (actual solve)
 
 ```text
 platform STS → ctf_participant_role
-            → log forensics + SigV4 code_exec
-            → blind Python in Lambda (stdout majority-masked)
-            → path-style S3 over VPCe (virtual-host DNS fails)
-            → bucket policy Stmt2: SourceVpc AND User-Agent
-            → GetObject flag.txt
+            → SigV4 code_exec (blind Python in Lambda)
+            → extensive recon (VPC mapping, boolean oracle, trail exfil)
+            → UA hunt via timing oracle + CloudTrail (thousands tried, 0 hits)
+            → organizers update Lambda wrapper
+            → full JSON response reveals ctf_out.f_value
+            → FLAG CAPTURED
 ```
 
 ### What is proven
@@ -192,13 +192,9 @@ platform STS → ctf_participant_role
 | GHA `cicdRole` | **Cannot** invoke Stage 2 `code_exec` |
 | UA → CloudTrail exfil | **Proven** (handler / env / deny-message recovery) |
 
-### Residual
+### Resolution
 
-```text
-Recover exact Statement2 aws:UserAgent
-  and/or prove aws:SourceVpc equals the Lambda VPC
-→ UNSIGNED path-style GetObject flag.txt → 200 → flag body
-```
+The flag was **not** obtained through the `docs.html` User-Agent path. Instead, the Lambda wrapper was updated during the challenge window, exposing a `ctf_out` object in the API response JSON containing `f_value` — the accepted flag hash.
 
 ---
 
@@ -248,7 +244,7 @@ Do not reuse techniques against systems you do not own or lack written permissio
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=3200&pause=1200&color=00C7B7&center=true&vCenter=true&width=720&height=40&lines=Agent+freecandy+%C2%B7+Cloud+Escape+CTF+2026;Stage+1+captured+%C2%B7+Stage+2+mapped+%C2%B7+Flag+2+pending" alt="footer" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=3200&pause=1200&color=00C7B7&center=true&vCenter=true&width=720&height=40&lines=Agent+freecandy+%C2%B7+Cloud+Escape+CTF+2026;Both+stages+captured+%C2%B7+300%2F300+pts" alt="footer" />
 
 <br/>
 
