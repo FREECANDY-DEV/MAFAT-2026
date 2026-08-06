@@ -70,6 +70,13 @@ html_template = f"""
         @page {{
             size: A4;
             margin: 0;
+            @frame bg_frame {{
+                -pdf-frame-content: bg_content;
+                left: 0; top: 0; width: 210mm; height: 297mm; z-index: -1;
+            }}
+            @frame content_frame {{
+                left: 0; top: 0; width: 210mm; height: 297mm;
+            }}
         }}
         @page regular {{
             size: A4;
@@ -125,7 +132,7 @@ html_template = f"""
     </style>
 </head>
 <body>
-    <div style="position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; z-index: -1;">
+    <div id="bg_content">
         <img src="cloud-escape/assets/cover_bg.jpg" style="width: 210mm; height: 297mm; margin: 0; padding: 0;" />
     </div>
     
