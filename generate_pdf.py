@@ -75,7 +75,7 @@ html_template = f"""
         @page regular {{
             size: A4;
             margin: 1.5cm;
-            background-image: url('cloud-escape/assets/pattern_bg.jpg');
+            background-image: url('cloud-escape/assets/pattern_bg_stretched.jpg');
             @frame header_frame {{
                 -pdf-frame-content: header_content;
                 left: 1.5cm; width: 18cm; top: 1cm; height: 1cm;
@@ -113,16 +113,24 @@ html_template = f"""
         
         {pygments_css}
         
-        .cover-title {{ font-size: 38pt; font-weight: bold; color: #ffffff; text-align: center; margin-top: 250pt; text-shadow: 2px 2px 4px #000000; }}
-        .cover-subtitle {{ font-size: 20pt; color: #ecf0f1; text-align: center; margin-top: 20pt; text-shadow: 1px 1px 3px #000000; }}
-        .cover-author {{ font-size: 16pt; color: #bdc3c7; text-align: center; margin-top: 80pt; font-weight: bold; text-shadow: 1px 1px 3px #000000; }}
+        .cover-container {{
+            text-align: center;
+            margin-top: 150pt;
+        }}
+        .cover-title {{ font-size: 44pt; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 6px #000000; margin-bottom: 0; padding-bottom: 0; }}
+        .cover-subtitle {{ font-size: 24pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 4px #000000; margin-top: 10pt; border-bottom: 2px solid #00ffff; padding-bottom: 20pt; display: inline-block; }}
+        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 40pt; line-height: 1.5; text-shadow: 2px 2px 4px #000000; font-style: italic; }}
+        .cover-author {{ font-size: 18pt; color: #ffffff; margin-top: 120pt; font-weight: bold; text-shadow: 2px 2px 4px #000000; background-color: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 8px; display: inline-block; border: 1px solid #3498db; }}
         
     </style>
 </head>
 <body>
-    <div class="cover-title">MAFAT 2026 CTF</div>
-    <div class="cover-subtitle">Operation CloudEscape - Comprehensive Writeup</div>
-    <div class="cover-author">Stage 1 & Stage 2 Exploitation Guide<br/>Team: FREECANDY-DEV</div>
+    <div class="cover-container">
+        <div class="cover-title">MAFAT 2026 CTF</div>
+        <div class="cover-subtitle">Operation CloudEscape</div>
+        <div class="cover-desc">Comprehensive Writeup & Exploitation Guide<br/>Stage 1 & Stage 2</div>
+        <div class="cover-author">Agent: FREECANDY-DEV</div>
+    </div>
     
     <pdf:nextpage name="regular" />
 
