@@ -115,12 +115,12 @@ html_template = f"""
         
         .cover-container {{
             text-align: center;
-            margin-top: 150pt;
+            padding-top: 220pt;
         }}
-        .cover-title {{ font-size: 44pt; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 6px #000000; margin-bottom: 0; padding-bottom: 0; }}
-        .cover-subtitle {{ font-size: 24pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 4px #000000; margin-top: 10pt; border-bottom: 2px solid #00ffff; padding-bottom: 20pt; display: inline-block; }}
-        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 40pt; line-height: 1.5; text-shadow: 2px 2px 4px #000000; font-style: italic; }}
-        .cover-author {{ font-size: 18pt; color: #ffffff; margin-top: 120pt; font-weight: bold; text-shadow: 2px 2px 4px #000000; background-color: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 8px; display: inline-block; border: 1px solid #3498db; }}
+        .cover-title {{ font-size: 48pt; font-weight: bold; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0; padding-bottom: 0; }}
+        .cover-subtitle {{ font-size: 26pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; margin-top: 15pt; border-bottom: 2px solid #00ffff; padding-bottom: 15pt; }}
+        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 40pt; line-height: 1.5; font-style: italic; }}
+        .cover-author {{ font-size: 20pt; color: #ffffff; margin-top: 80pt; font-weight: bold; background-color: #111111; padding: 15px; border: 1px solid #3498db; }}
         
     </style>
 </head>
