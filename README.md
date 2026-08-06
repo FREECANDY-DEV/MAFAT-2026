@@ -110,7 +110,7 @@ flowchart TB
         L1 --> F1["flag → DNS hex"]
     end
 
-    subgraph S2["STAGE 2 · Miss Me Yet? · MAPPED"]
+    subgraph S2["STAGE 2 · Miss Me Yet? · CAPTURED"]
         direction LR
         STS["Platform STS<br/>ctf_participant_role"] --> CE["/dev/code_exec"]
         STS --> LOG["logd8a2f72fe43094e8"]

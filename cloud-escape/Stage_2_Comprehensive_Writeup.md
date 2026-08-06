@@ -62,30 +62,31 @@ The primary attack vector was a POST request to `https://l8ssyaz69f.execute-api.
 ### Initial Architecture Assessment
 
 ```mermaid
-architecture-beta
-    group vpc(cloud)[Virtual Private Cloud]
-    
-    service attacker(internet)[Attacker]
-    service apigw(server)[API Gateway]
-    service cf(cloud)[CloudFront]
-    
-    group privatesubnet(group)[Private Subnet 10.0.0.29] in vpc
-    service lambda(server)[AWS Lambda] in privatesubnet
-    
-    service vpce(database)[S3 VPC Endpoint] in vpc
-    
-    service s3_user(database)[S3: userd8a...]
-    service s3_logs(database)[S3: logd8a...]
-    
-    attacker:R -- L:apigw
-    attacker:R -- L:cf
-    
-    apigw:R -- L:lambda
-    cf:R -- L:s3_user
-    
-    lambda:R -- L:vpce
-    vpce:R -- L:s3_user
-    vpce:R -- L:s3_logs
+flowchart LR
+    Attacker(["Attacker"]) --> APIGW["API Gateway"]
+    Attacker --> CF["CloudFront"]
+
+    subgraph VPC ["Virtual Private Cloud"]
+        direction LR
+        subgraph Subnet ["Private Subnet 10.0.0.29"]
+            Lambda["AWS Lambda"]
+        end
+        VPCE["S3 VPC Endpoint"]
+        Lambda --> VPCE
+    end
+
+    APIGW --> Lambda
+    CF --> S3U["S3: userd8a2f72fe43094e8"]
+    VPCE --> S3U
+    VPCE --> S3L["S3: logd8a2f72fe43094e8"]
+
+    Lambda -.-x NoIGW["No Internet"]
+    Lambda -.-x NoIMDS["No IMDS"]
+    Lambda -.-x NoSTS["No STS"]
+
+    style NoIGW fill:#f99,stroke:#333,stroke-dasharray: 5 5
+    style NoIMDS fill:#f99,stroke:#333,stroke-dasharray: 5 5
+    style NoSTS fill:#f99,stroke:#333,stroke-dasharray: 5 5
 ```
 
 The architecture diagram above illustrates the strict containment. The only way out of the Lambda was through the S3 VPC endpoint.
@@ -160,15 +161,15 @@ I spent two hours analyzing `junior_developer.png`.
 
 ```mermaid
 graph TD
-    A[CloudFront Distribution] --> B(/index.html 200 OK)
-    A --> C(/docs.html 200 OK)
-    A --> D(/junior_developer.png 200 OK)
-    A --> E(/flag.txt 403 Forbidden)
-    
-    C --> F[Statement1: Allow Public HTML/PNG if User-Agent matches]
-    C --> G[Statement2: Allow ALL Objects if SourceVpc AND User-Agent match]
-    
-    G --> H((Target: flag.txt))
+    A["CloudFront Distribution"] --> B["/index.html - 200 OK"]
+    A --> C["/docs.html - 200 OK"]
+    A --> D["/junior_developer.png - 200 OK"]
+    A --> E["/flag.txt - 403 Forbidden"]
+
+    C --> F["Statement1: Allow Public HTML/PNG if User-Agent matches"]
+    C --> G["Statement2: Allow ALL Objects if SourceVpc AND User-Agent match"]
+
+    G --> H(("Target: flag.txt"))
 ```
 
 ---
@@ -319,22 +320,22 @@ Using the oracle, I extracted the internal state of the Lambda:
 
 ```mermaid
 graph LR
-    subgraph VPC [Target VPC]
-        subgraph Subnet [Private Subnet 10.0.0.0/24]
-            L[Lambda ENI 10.0.0.29]
+    subgraph VPC ["Target VPC"]
+        subgraph Subnet ["Private Subnet 10.0.0.0/24"]
+            L["Lambda ENI 10.0.0.29"]
         end
-        
-        subgraph Gateway [VPC Endpoints]
-            VPCE[vpce-04104ef3d57a... S3 Interface]
+
+        subgraph Gateway ["VPC Endpoints"]
+            VPCE["vpce-04104ef3d57a26557 - S3"]
         end
-        
+
         L -- HTTPS --> VPCE
     end
-    
-    VPCE -- Internal AWS Network --> S3((Amazon S3))
-    L -.-x IGW[Internet Gateway]
-    L -.-x IMDS[IMDS 169.254.169.254]
-    
+
+    VPCE -- "Internal AWS Network" --> S3(("Amazon S3"))
+    L -.-x IGW["Internet Gateway"]
+    L -.-x IMDS["IMDS 169.254.169.254"]
+
     style IGW fill:#ff9999,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
     style IMDS fill:#ff9999,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
 ```
@@ -557,31 +558,31 @@ But the response was no longer just `{"result": "Code executed successfully"}`. 
 
 ```mermaid
 flowchart TD
-    subgraph Original Architecture
-    A1[API POST] --> B1[Lambda Handler]
-    B1 --> C1[exec(base64_decode)]
-    C1 --> D1[Return Result/Error]
+    subgraph OrigArch ["Original Architecture"]
+    A1["API POST"] --> B1["Lambda Handler"]
+    B1 --> C1["exec base64 decode"]
+    C1 --> D1["Return Result/Error"]
     end
 
-    subgraph Updated Architecture (Vulnerable)
-    A2[API POST] --> B2[Lambda Handler]
-    B2 --> C2[_advanced_dispatcher wrapper]
-    C2 --> D2[exec(base64_decode)]
-    D2 --> E2{Try serialize with _ad_json}
-    E2 -->|CRASH: NameError| F2[Return StackTrace]
+    subgraph VulnArch ["Updated Architecture - Vulnerable"]
+    A2["API POST"] --> B2["Lambda Handler"]
+    B2 --> C2["_advanced_dispatcher wrapper"]
+    C2 --> D2["exec base64 decode"]
+    D2 --> E2{"Try serialize with _ad_json"}
+    E2 -->|"CRASH: NameError"| F2["Return StackTrace"]
     end
 
-    subgraph Patched Architecture (Exploited)
-    A3[API POST (with global _ad_json = json)] --> B3[Lambda Handler]
-    B3 --> C3[_advanced_dispatcher wrapper]
-    C3 --> D3[exec(base64_decode)]
-    D3 --> E3{Try serialize with _ad_json}
-    E3 -->|SUCCESS: json.dumps()| F3[Return Enriched JSON with ctf_out!]
+    subgraph PatchArch ["Patched Architecture - Exploited"]
+    A3["API POST with global _ad_json = json"] --> B3["Lambda Handler"]
+    B3 --> C3["_advanced_dispatcher wrapper"]
+    C3 --> D3["exec base64 decode"]
+    D3 --> E3{"Try serialize with _ad_json"}
+    E3 -->|"SUCCESS: json.dumps"| F3["Return Enriched JSON with ctf_out!"]
     end
-    
-    style Original Architecture fill:#f0f0f0,stroke:#333
-    style Updated Architecture (Vulnerable) fill:#ffe6e6,stroke:#ff0000
-    style Patched Architecture (Exploited) fill:#e6ffe6,stroke:#00aa00
+
+    style OrigArch fill:#f0f0f0,stroke:#333
+    style VulnArch fill:#ffe6e6,stroke:#ff0000
+    style PatchArch fill:#e6ffe6,stroke:#00aa00
 ```
 
 ### Understanding the `ctf_out` Object
