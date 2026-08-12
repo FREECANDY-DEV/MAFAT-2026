@@ -79,43 +79,47 @@ html_template = f"""
         }}
         @page regular {{
             size: A4;
-            margin: 1.5cm;
+            margin-top: 2.2cm;
+            margin-bottom: 2.2cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
             background-image: url('cloud-escape/assets/pattern_bg_stretched.jpg');
             @frame header_frame {{
                 -pdf-frame-content: header_content;
-                left: 1.5cm; width: 18cm; top: 1cm; height: 1cm;
+                left: 1.5cm; width: 18cm; top: 0.8cm; height: 1cm;
             }}
             @frame footer_frame {{
                 -pdf-frame-content: footer_content;
-                left: 1.5cm; width: 18cm; bottom: 1cm; height: 1cm;
+                left: 1.5cm; width: 18cm; bottom: 0.8cm; height: 1cm;
             }}
         }}
         
         body {{
             font-family: Helvetica, Arial, sans-serif;
-            font-size: 11pt;
+            font-size: 10.5pt;
             color: #2c3e50;
-            line-height: 1.6;
+            line-height: 1.5;
             word-wrap: break-word;
         }}
         
-        h1 {{ color: #2c3e50; font-size: 22pt; text-align: left; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 20pt; }}
-        h2 {{ color: #2980b9; font-size: 16pt; margin-top: 15pt; }}
-        h3 {{ color: #34495e; font-size: 13pt; margin-top: 10pt; }}
+        h1 {{ color: #2c3e50; font-size: 20pt; text-align: left; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 15pt; page-break-after: avoid; }}
+        h2 {{ color: #2980b9; font-size: 15pt; margin-top: 12pt; page-break-after: avoid; }}
+        h3 {{ color: #34495e; font-size: 12pt; margin-top: 10pt; page-break-after: avoid; }}
         
         a {{ color: #3498db; text-decoration: none; word-wrap: break-word; }}
         
         table {{ width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 10pt; table-layout: fixed; word-wrap: break-word; }}
+        tr {{ page-break-inside: avoid; }}
         th {{ background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 6px; font-weight: bold; text-align: left; word-wrap: break-word; }}
         td {{ border: 1px solid #bdc3c7; padding: 6px; word-wrap: break-word; }}
         
-        pre {{ background-color: #f8f9f9; border: 1px solid #d5d8dc; padding: 10px; font-size: 9pt; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }}
-        code {{ font-family: "Courier New", Courier, monospace; background-color: #f2f3f4; padding: 2px 4px; font-size: 9.5pt; color: #e74c3c; border-radius: 3px; word-wrap: break-word; }}
-        pre code {{ background-color: transparent; padding: 0; color: inherit; font-size: 9pt; white-space: pre-wrap; word-wrap: break-word; }}
+        pre {{ background-color: #f8f9f9; border: 1px solid #d5d8dc; padding: 8px; font-size: 8.5pt; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }}
+        code {{ font-family: "Courier New", Courier, monospace; background-color: #f2f3f4; padding: 2px 4px; font-size: 9pt; color: #e74c3c; border-radius: 3px; word-wrap: break-word; }}
+        pre code {{ background-color: transparent; padding: 0; color: inherit; font-size: 8.5pt; white-space: pre-wrap; word-wrap: break-word; }}
         
         blockquote {{ border-left: 4px solid #3498db; margin-left: 0; padding-left: 15px; color: #7f8c8d; font-style: italic; background-color: #f4f6f7; padding-top: 5px; padding-bottom: 5px; }}
         
-        img {{ max-width: 100%; display: block; margin: 10px auto; zoom: 70%; }}
+        img {{ max-width: 100%; max-height: 20cm; display: block; margin: 10px auto; zoom: 70%; page-break-inside: avoid; }}
         
         {pygments_css}
         
