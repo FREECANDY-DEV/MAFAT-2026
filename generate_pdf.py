@@ -70,7 +70,7 @@ html_template = f"""
         @page {{
             size: A4;
             margin: 0;
-            background-image: url('cloud-escape/assets/cover_bg.jpg');
+            background-image: url('cloud-escape/assets/full_cover.jpg');
         }}
         @page regular {{
             size: A4;
@@ -114,24 +114,10 @@ html_template = f"""
         
         {pygments_css}
         
-        .cover-container {{
-            text-align: center;
-            padding-top: 80pt;
-        }}
-        .cover-title {{ font-size: 48pt; font-weight: bold; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0; padding-bottom: 0; }}
-        .cover-subtitle {{ font-size: 26pt; font-weight: bold; color: #00ffff; text-transform: uppercase; letter-spacing: 4px; margin-top: 5pt; border-bottom: 2px solid #00ffff; padding-bottom: 10pt; }}
-        .cover-desc {{ font-size: 18pt; color: #ecf0f1; margin-top: 20pt; line-height: 1.5; font-style: italic; }}
-        .cover-author {{ font-size: 20pt; color: #ffffff; margin-top: 30pt; font-weight: bold; background-color: #111111; padding: 15px; border: 1px solid #3498db; }}
-        
     </style>
 </head>
 <body>
-    <div class="cover-container">
-        <div class="cover-title">MAFAT 2026 CTF</div>
-        <div class="cover-subtitle">Operation CloudEscape</div>
-        <div class="cover-desc">Comprehensive Writeup & Exploitation Guide<br/>Stage 1 & Stage 2</div>
-        <div class="cover-author">Agent: FREECANDY-DEV</div>
-    </div>
+    <div style="font-size: 1pt; color: transparent;">Cover</div>
     
     <pdf:nextpage name="regular" />
 
@@ -161,5 +147,5 @@ def fetch_resources(uri, rel):
         return path
     return uri
 
-with open('cloud-escape/MAFAT_2026_Writeups_Professional.pdf', 'w+b') as result_file:
+with open('MAFAT_2026_Writeups_Professional.pdf', 'w+b') as result_file:
     pisa.CreatePDF(html_template, dest=result_file, path=".", link_callback=fetch_resources)
