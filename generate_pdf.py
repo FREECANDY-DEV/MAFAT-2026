@@ -91,17 +91,18 @@ html_template = f"""
             font-size: 11pt;
             color: #2c3e50;
             line-height: 1.6;
+            word-wrap: break-word;
         }}
         
         h1 {{ color: #2c3e50; font-size: 22pt; text-align: left; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 20pt; }}
         h2 {{ color: #2980b9; font-size: 16pt; margin-top: 15pt; }}
         h3 {{ color: #34495e; font-size: 13pt; margin-top: 10pt; }}
         
-        a {{ color: #3498db; text-decoration: none; }}
+        a {{ color: #3498db; text-decoration: none; word-wrap: break-word; }}
         
-        table {{ width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 10pt; }}
-        th {{ background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 6px; font-weight: bold; text-align: left; }}
-        td {{ border: 1px solid #bdc3c7; padding: 6px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 10pt; table-layout: fixed; word-wrap: break-word; }}
+        th {{ background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 6px; font-weight: bold; text-align: left; word-wrap: break-word; }}
+        td {{ border: 1px solid #bdc3c7; padding: 6px; word-wrap: break-word; }}
         
         pre {{ background-color: #f8f9f9; border: 1px solid #d5d8dc; padding: 10px; font-size: 9pt; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }}
         code {{ font-family: "Courier New", Courier, monospace; background-color: #f2f3f4; padding: 2px 4px; font-size: 9.5pt; color: #e74c3c; border-radius: 3px; word-wrap: break-word; }}
