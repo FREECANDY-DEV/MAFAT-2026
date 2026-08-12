@@ -43,6 +43,11 @@ with open('cloud-escape/Stage_2_Comprehensive_Writeup.md', encoding='utf-8') as 
 
 combined_md = f"{stage1}\n\n<pdf:nextpage />\n\n{stage2}"
 
+# Filter out shields.io badges and typing SVG headers (PDF ONLY)
+combined_md = re.sub(r'!\[.*?\]\(https://img\.shields\.io/.*?\)', '', combined_md)
+combined_md = re.sub(r'<img[^>]*src="https://img\.shields\.io/[^"]*"[^>]*/>?', '', combined_md, flags=re.IGNORECASE)
+combined_md = re.sub(r'<img[^>]*src="https://readme-typing-svg\.demolab\.com[^"]*"[^>]*/>?', '', combined_md, flags=re.IGNORECASE)
+
 combined_md = process_mermaid_blocks(combined_md)
 
 md = markdown.Markdown(extensions=['fenced_code', 'tables', 'codehilite', 'toc'])
